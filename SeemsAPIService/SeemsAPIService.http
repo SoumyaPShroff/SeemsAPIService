@@ -1,0 +1,6 @@
+@SeemsAPIService_HostAddress = http://localhost:5180
+
+GET {{SeemsAPIService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
