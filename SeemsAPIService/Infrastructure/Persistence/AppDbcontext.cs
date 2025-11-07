@@ -30,6 +30,10 @@ namespace SeemsAPIService.Infrastructure.Persistence
         public DbSet<HOPCManagerList> HOPCManagerList { get; set; }      
         public DbSet<Invoicedictionary> Invoicedictionary { get; set; }
         public DbSet<ThreeMonthConfirmedOrders> ThreeMonthConfirmedOrders { get; set; }
+        public DbSet<PendingInvoices> PendingInvoices { get; set; }
+        public DbSet<ViewAllEnquiries> ViewAllEnquiries { get; set; }
+        public DbSet<employeeroles> employeeroles { get; set; }
+
         public async Task<object> GetTentativeQuotedOrders()
         {
             using var connection = Database.GetDbConnection();
@@ -109,7 +113,5 @@ namespace SeemsAPIService.Infrastructure.Persistence
                 ConfirmedOrders = confirmedOrders
             };
         }
-
-       public DbSet<PendingInvoices> PendingInvoices { get; set; }
     }
 }

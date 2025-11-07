@@ -17,7 +17,7 @@ namespace SeemsAPIService.API.Controllers
             _context = context;
         }
 
-       // [HttpGet("GetThreeMonthConfirmedOrders/{startdate}/{enddate}")]
+        // [HttpGet("GetThreeMonthConfirmedOrders/{startdate}/{enddate}")]
         [HttpGet("ThreeMonthConfirmedOrders/{startdate}/{enddate}")]
         public async Task<List<ThreeMonthConfirmedOrders>> ThreeMonthConfirmedOrders(string startdate, string enddate)
         {
@@ -65,14 +65,22 @@ namespace SeemsAPIService.API.Controllers
         [HttpGet("PendingInvoices/{costcenter}")]
         public async Task<List<PendingInvoices>> PendingInvoices(string costcenter)
         {
-            List<PendingInvoices> list = new();
+            //List<PendingInvoices> list = new();
+            //// Call your stored procedure
+            //string sql = $"CALL sp_PendingInvoices('{costcenter}')";
+            //list = await _context.PendingInvoices.FromSqlRaw(sql).ToListAsync();
+            //return list;
 
-            // Call your stored procedure
             string sql = $"CALL sp_PendingInvoices('{costcenter}')";
+            return await _context.PendingInvoices.FromSqlRaw(sql).ToListAsync();
+        }
 
-            list = await _context.PendingInvoices.FromSqlRaw(sql).ToListAsync();
+        [HttpGet("AllEnquiries")]
+        public async Task<List<ViewAllEnquiries>> AllEnquiries(string? salesResponsibility = null)
+        {
+            string sql = $"CALL sp_viewallenquiries('{salesResponsibility}')";
+            return await _context.ViewAllEnquiries.FromSqlRaw(sql).ToListAsync();
 
-            return list;
         }
 
     }

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using MySqlConnector;
 using SeemsAPIService.Application.Services;
 using SeemsAPIService.Domain.Entities;
 using SeemsAPIService.Infrastructure.Persistence;
@@ -26,8 +27,8 @@ namespace SeemsAPIService.API.Controllers
             try
             {
                 // Convert plain text password to Base64
-               string encodedPassword = Convert.ToBase64String(Encoding.UTF8.GetBytes(ppassword));
-              //  string encodedPassword = AesEncryptionHelper.EncryptToBase64(ppassword);
+                string encodedPassword = Convert.ToBase64String(Encoding.UTF8.GetBytes(ppassword));
+                //  string encodedPassword = AesEncryptionHelper.EncryptToBase64(ppassword);
 
                 var VerifyLoginUser = await _context.Login
                                              .Where(l => l.LoginID == ploginid && l.Password == encodedPassword)
@@ -138,6 +139,33 @@ namespace SeemsAPIService.API.Controllers
             }
         }
 
+        [HttpGet("ManagerCostcenterInfo/{pLoginId}")]
+        public IActionResult ManagerCostcenterInfo(string pLoginId)
+        {
+            try
+            {
+                var managerInfo = _context.setting_employee
+                    .Where(l => l.HOPC1ID == pLoginId)
+                    .Select(l => new
+                    {
+                        hopc1id = l.HOPC1ID,
+                        hopc1name = l.HOPC1NAME,
+                        costcenter = l.costcenter
+                    })
+                    .ToList();
+
+                if (managerInfo == null || managerInfo.Count == 0)
+                    return NotFound($"No manager found with HOPC1ID '{pLoginId}'");
+
+                return Ok(managerInfo);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+
         [HttpGet("HOPCManagerList")]
         public async Task<List<HOPCManagerList>> HOPCManagerList()
 
@@ -150,6 +178,63 @@ namespace SeemsAPIService.API.Controllers
 
             }
         }
+
+        [HttpGet("UserRoleInternalRights/{pRole}/{pPageName}")]
+        public async Task<ActionResult<bool>> UserRoleInternalRights(string pRole, string pPageName)
+        {
+            try
+            {
+                // Get the record for that role
+                var roleRecord = await _context.employeeroles
+                    .FirstOrDefaultAsync(e => e.Roles == pRole);
+
+                if (roleRecord == null)
+                    //return NotFound("Role not found");
+                    return false;
+
+                // Use reflection to dynamically check the column value
+                var property = roleRecord.GetType().GetProperty(pPageName,
+                    System.Reflection.BindingFlags.IgnoreCase |
+                    System.Reflection.BindingFlags.Public |
+                    System.Reflection.BindingFlags.Instance);
+
+                if (property == null)
+                    // return BadRequest("Invalid page name");
+                    return false;
+
+                var value = property.GetValue(roleRecord);
+                //if value is null then returns 0
+                bool hasAccess = Convert.ToInt32(value ?? 0) == 1;
+
+                return Ok(hasAccess);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        [HttpGet("UserDesignation/{pLoginId}")]
+        public IActionResult UserDesignation(string pLoginId)
+
+        {
+            try
+            {
+                var userjobtitle = _context.general_employee.Where(g => g.IDno == pLoginId).Select(l => l.JobTitle).FirstOrDefault();
+
+                if (userjobtitle == null)
+                    return NotFound($"No designation found with loginid '{pLoginId}'");
+
+                return Ok(userjobtitle);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+
 
     }
 }
