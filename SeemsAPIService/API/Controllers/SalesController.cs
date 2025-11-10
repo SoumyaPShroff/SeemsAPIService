@@ -75,13 +75,26 @@ namespace SeemsAPIService.API.Controllers
             return await _context.PendingInvoices.FromSqlRaw(sql).ToListAsync();
         }
 
-        [HttpGet("AllEnquiries")]
-        public async Task<List<ViewAllEnquiries>> AllEnquiries(string? salesResponsibility = null)
-        {
-            string sql = $"CALL sp_viewallenquiries('{salesResponsibility}')";
-            return await _context.ViewAllEnquiries.FromSqlRaw(sql).ToListAsync();
+        //[HttpGet("AllEnquiries/{salesResponsibilityId}/{status}")]
+        //public async Task<List<ViewAllEnquiries>> AllEnquiries(string? salesResponsibilityId = null,string? status = null)
+        //{
+        //    string sql = $"CALL sp_viewallenquiries('{salesResponsibilityId}','{status}')";
+        //    return await _context.ViewAllEnquiries.FromSqlRaw(sql).ToListAsync();
 
+        //}
+
+        [HttpGet("AllEnquiries")]
+        public async Task<List<ViewAllEnquiries>> AllEnquiries(string? salesResponsibilityId = null, string? status = null)
+        {
+            // Handle nulls properly before passing into SQL
+            string srId = string.IsNullOrEmpty(salesResponsibilityId) ? "" : salesResponsibilityId;
+            string stat = string.IsNullOrEmpty(status) ? "" : status;
+
+            string sql = $"CALL sp_ViewAllEnquiries('{srId}', '{stat}')";
+
+            return await _context.ViewAllEnquiries.FromSqlRaw(sql).ToListAsync();
         }
+
 
     }
 }

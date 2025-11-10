@@ -11,6 +11,7 @@ namespace SeemsAPIService.Domain.Entities
         public string Createdon { get; set; }
         public string EndDate { get; set; }
         public string SalesResponsibility { get; set; }
+        public string status { get; set; }
         public string Esti { get; set; }
         public string CompleteResponsibility { get; set; }
         public string EnquiryType { get; set; }
