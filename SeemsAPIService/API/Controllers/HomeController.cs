@@ -235,6 +235,42 @@ namespace SeemsAPIService.API.Controllers
         }
 
 
+        [HttpGet("AllActiveEmployees")]
+        public async Task<IActionResult> AllActiveEmployees()
+        {
+            try
+            {
+                var activeEmps = await _context.general_employee.Where(e => e.EmpStatus == "Active").Select(e => new { e.IDno, e.Name }).ToListAsync();
 
+                if (activeEmps == null || !activeEmps.Any())
+                    return NotFound("No active employees found.");
+
+                return Ok(activeEmps);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "An error occurred while fetching active employees.", error = ex.Message });
+            }
+        }
+
+        [HttpGet("AnalysisManagers")]
+        public async Task<IActionResult> AnalysisManagers()
+        {
+            try
+            {
+                var analyMngrs = await _context.setting_employee.Where(s => s.costcenter_analysis == "YES").Select(s => new { s.HOPC1ID, s.HOPC1NAME }).ToListAsync();
+
+                if (analyMngrs == null || !analyMngrs.Any())
+                    return NotFound("No analyMngrs found.");
+
+                return Ok(analyMngrs);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "An error occurred while fetching analyMngrs.", error = ex.Message });
+            }
+        }
     }
 }

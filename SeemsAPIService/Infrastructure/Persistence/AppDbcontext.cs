@@ -33,7 +33,7 @@ namespace SeemsAPIService.Infrastructure.Persistence
         public DbSet<PendingInvoices> PendingInvoices { get; set; }
         public DbSet<ViewAllEnquiries> ViewAllEnquiries { get; set; }
         public DbSet<employeeroles> employeeroles { get; set; }
-
+        public DbSet<customer> customer { get; set; }
         public async Task<object> GetTentativeQuotedOrders()
         {
             using var connection = Database.GetDbConnection();

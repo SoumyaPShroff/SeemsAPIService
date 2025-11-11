@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SeemsAPIService.Domain.Entities;
 using SeemsAPIService.Infrastructure.Persistence;
 using System.Data;
+using System.Reflection.Metadata.Ecma335;
 
 namespace SeemsAPIService.API.Controllers
 {
@@ -17,7 +18,6 @@ namespace SeemsAPIService.API.Controllers
             _context = context;
         }
 
-        // [HttpGet("GetThreeMonthConfirmedOrders/{startdate}/{enddate}")]
         [HttpGet("ThreeMonthConfirmedOrders/{startdate}/{enddate}")]
         public async Task<List<ThreeMonthConfirmedOrders>> ThreeMonthConfirmedOrders(string startdate, string enddate)
         {
@@ -65,23 +65,9 @@ namespace SeemsAPIService.API.Controllers
         [HttpGet("PendingInvoices/{costcenter}")]
         public async Task<List<PendingInvoices>> PendingInvoices(string costcenter)
         {
-            //List<PendingInvoices> list = new();
-            //// Call your stored procedure
-            //string sql = $"CALL sp_PendingInvoices('{costcenter}')";
-            //list = await _context.PendingInvoices.FromSqlRaw(sql).ToListAsync();
-            //return list;
-
             string sql = $"CALL sp_PendingInvoices('{costcenter}')";
             return await _context.PendingInvoices.FromSqlRaw(sql).ToListAsync();
         }
-
-        //[HttpGet("AllEnquiries/{salesResponsibilityId}/{status}")]
-        //public async Task<List<ViewAllEnquiries>> AllEnquiries(string? salesResponsibilityId = null,string? status = null)
-        //{
-        //    string sql = $"CALL sp_viewallenquiries('{salesResponsibilityId}','{status}')";
-        //    return await _context.ViewAllEnquiries.FromSqlRaw(sql).ToListAsync();
-
-        //}
 
         [HttpGet("AllEnquiries")]
         public async Task<List<ViewAllEnquiries>> AllEnquiries(string? salesResponsibilityId = null, string? status = null)
@@ -95,6 +81,49 @@ namespace SeemsAPIService.API.Controllers
             return await _context.ViewAllEnquiries.FromSqlRaw(sql).ToListAsync();
         }
 
+        //[HttpPost("AddEnquiryData")]
+        //public async Task<IActionResult> AddEnquiryData([FromForm] AddEnquiryData dto, IFormFile file)
+        //{
+        //    if (file != null && file.Length > 0)
+        //    {
+        //        var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "UploadedFiles");
+        //        if (!Directory.Exists(uploadPath))
+        //            Directory.CreateDirectory(uploadPath);
+
+        //        var filePath = Path.Combine(uploadPath, Path.GetFileName(file.FileName));
+        //        using (var stream = new FileStream(filePath, FileMode.Create))
+        //        {
+        //            await file.CopyToAsync(stream);
+        //        }
+
+        //        dto.AttachmentPath = filePath; // store path in DB
+        //    }
+
+        //    // Save enquiry to database...
+        //    // await _context.Enquiries.AddAsync(dto);
+        //    // await _context.SaveChangesAsync();
+
+        //    return Ok(new { message = "Enquiry added successfully." });
+        //}
+        
+  [HttpGet("Customers")]
+        public async Task<IActionResult> GetCustomers()
+        {
+            try
+            {
+                var customers = await _context.customer.Select(c => new {c.itemno,c.Customer}).ToListAsync();
+
+                if (customers == null || !customers.Any())
+                    return NotFound("No customers found.");
+
+                return Ok(customers);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "An error occurred while fetching customers.", error = ex.Message });
+            }
+        }
 
     }
 }
