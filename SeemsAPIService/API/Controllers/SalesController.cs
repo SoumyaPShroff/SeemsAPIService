@@ -111,7 +111,7 @@ namespace SeemsAPIService.API.Controllers
         {
             try
             {
-                var customers = await _context.customer.Select(c => new {c.itemno,c.Customer}).ToListAsync();
+                var customers = await _context.customer.OrderBy(c=>c.Customer).Select(c => new {c.itemno,c.Customer}).ToListAsync();
 
                 if (customers == null || !customers.Any())
                     return NotFound("No customers found.");

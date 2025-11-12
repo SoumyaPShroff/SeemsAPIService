@@ -43,20 +43,7 @@ namespace SeemsAPIService.API.Controllers
                 return list;
             }
         }
-        //[HttpGet("BillingPlanner/{startdate}/{enddate}/{costcenter?}")]
-        //public async Task<List<BillingPlannerRpt>> BillingPlanner(string startdate, string enddate, string? costcenter = null)
-        //{
-        //    var safeCostcenter = string.IsNullOrEmpty(costcenter) || costcenter == "undefined" ? "" : costcenter;
-
-        //    var sql = "CALL sp_BillingPlanner ({0}, {1}, {2})";
-        //    var list = await _context.BillingPlannerRpt
-        //        .FromSqlRaw(sql, startdate, enddate, safeCostcenter)
-        //        .ToListAsync();
-
-        //    return list;
-        //}
-
-
+ 
         [HttpGet("InvoiceDictionary/{startdate}/{enddate}")]
         public async Task<List<Invoicedictionary>> InvoiceDictionary(string startdate, string enddate)
 
@@ -66,6 +53,25 @@ namespace SeemsAPIService.API.Controllers
                 string sql = $"CALL sp_InvoiceDictionary('{startdate}','{enddate}')";
                 list = await _context.Invoicedictionary.FromSqlRaw<Invoicedictionary>(sql).ToListAsync();
                 return list;
+            }
+        }
+
+        [HttpGet("PCBTools")]
+        public async Task<IActionResult> PCBTools()
+        {
+            try
+            {
+                var PCBTools = await _context.tool.Where(t => t.Pcbtool != null).Select(t =>  t.Pcbtool).ToListAsync();
+
+                if (PCBTools == null || !PCBTools.Any())
+                    return NotFound("No PCBTools found.");
+
+                return Ok(PCBTools);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "An error occurred while fetching PCBTools.", error = ex.Message });
             }
         }
 

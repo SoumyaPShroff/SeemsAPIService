@@ -34,6 +34,8 @@ namespace SeemsAPIService.Infrastructure.Persistence
         public DbSet<ViewAllEnquiries> ViewAllEnquiries { get; set; }
         public DbSet<employeeroles> employeeroles { get; set; }
         public DbSet<customer> customer { get; set; }
+        public DbSet<view_salesnpiusers> view_salesnpiusers { get; set; }
+        public DbSet<tool> tool { get; set; }
         public async Task<object> GetTentativeQuotedOrders()
         {
             using var connection = Database.GetDbConnection();

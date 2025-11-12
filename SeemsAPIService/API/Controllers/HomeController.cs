@@ -259,7 +259,7 @@ namespace SeemsAPIService.API.Controllers
         {
             try
             {
-                var analyMngrs = await _context.setting_employee.Where(s => s.costcenter_analysis == "YES").Select(s => new { s.HOPC1ID, s.HOPC1NAME }).ToListAsync();
+                var analyMngrs = await _context.setting_employee.Where(s => s.costcenter_analysis == "YES" && s.costcenter_status == "Active").Select(s => new { s.HOPC1ID, s.HOPC1NAME }).ToListAsync();
 
                 if (analyMngrs == null || !analyMngrs.Any())
                     return NotFound("No analyMngrs found.");
@@ -270,6 +270,61 @@ namespace SeemsAPIService.API.Controllers
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     new { message = "An error occurred while fetching analyMngrs.", error = ex.Message });
+            }
+        }
+        [HttpGet("DesignManagers")]
+        public async Task<IActionResult> DesignManagers()
+        {
+            try
+            {
+                var designMngrs = await _context.setting_employee.Where(s => s.design == "YES" && s.costcenter_status == "Active").Select(s => new { s.HOPC1ID, s.HOPC1NAME }).Distinct().ToListAsync();
+
+                if (designMngrs == null || !designMngrs.Any())
+                    return NotFound("No designMngrs found.");
+
+                return Ok(designMngrs);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "An error occurred while fetching designMngrs.", error = ex.Message });
+            }
+        }
+        [HttpGet("SalesManagers")]
+        public async Task<IActionResult> SalesManagers()
+        {
+            try
+            {
+                var salesMngrs = await _context.setting_employee.Where(s => s.costcenter_sales == "YES" && s.costcenter_status == "Active").Select(s => new { s.HOPC1ID, s.HOPC1NAME }).ToListAsync();
+
+                if (salesMngrs == null || !salesMngrs.Any())
+                    return NotFound("No salesMngrs found.");
+
+                return Ok(salesMngrs);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "An error occurred while fetching salesMngrs.", error = ex.Message });
+            }
+        }
+        [HttpGet("salesnpiusers")]
+        public async Task<IActionResult> salesnpiusers()
+
+        {
+            try
+            {
+                var salesnpiMngrs = await _context.view_salesnpiusers.Select(s => new { s.IDno, s.Name }).ToListAsync();
+
+                if (salesnpiMngrs == null || !salesnpiMngrs.Any())
+                    return NotFound("No salesnpiMngrs found.");
+
+                return Ok(salesnpiMngrs);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "An error occurred while fetching salesnpiMngrs.", error = ex.Message });
             }
         }
     }
