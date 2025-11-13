@@ -125,5 +125,94 @@ namespace SeemsAPIService.API.Controllers
             }
         }
 
+        [HttpGet("customerlocations")]
+        public async Task<IActionResult> customerlocations([FromQuery] int? customerId)
+        {
+            try
+            {
+                IQueryable<se_customer_locations> query = _context.se_customer_locations;
+
+                // If customerId is provided, filter by it
+                if (customerId.HasValue)
+                {
+                    query = query.Where(l => l.customer_id == customerId.Value);
+                }
+
+                var custlocs = await query
+                    .Select(l => new
+                    {
+                        l.location_id,
+                        l.location,
+                        l.address,
+                        l.phoneno1,
+                        l.phoneno2,
+                    })
+                    .ToListAsync();
+
+                if (custlocs == null || !custlocs.Any())
+                    return NotFound("No customer locations found.");
+
+                return Ok(custlocs);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    message = "An error occurred while fetching customer locations.",
+                    error = ex.Message
+                });
+            }
+        }
+        [HttpGet("customercontacts")]
+        public async Task<IActionResult> customercontacts([FromQuery] int? customer_id, int? location_id)
+        {
+            try
+            {
+                IQueryable<se_customer_contacts> query = _context.se_customer_contacts;
+
+                // If contact_id is provided, filter by it
+                if (customer_id.HasValue && location_id.HasValue)
+                {
+                    query = query.Where(c => c.customer_id == customer_id.Value && c.location_id == location_id.Value);
+                }
+                else
+                {
+                    // Otherwise, filter individually if provided
+                    if (customer_id.HasValue)
+                        query = query.Where(c => c.customer_id == customer_id.Value);
+
+                    if (location_id.HasValue)
+                        query = query.Where(c => c.location_id == location_id.Value);
+                }
+
+                var custcon = await query
+                    .Select(c => new
+                    {
+                        c.contact_id,
+                        c.location_id,
+                        c.customer_id,
+                        c.ContactTitle,
+                        c.ContactName,
+                        c.email11,
+                        c.mobile1,
+                        c.mobile2,
+                    })
+                    .ToListAsync();
+
+                if (custcon == null || !custcon.Any())
+                    return NotFound("No customer contacts found.");
+
+                return Ok(custcon);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    message = "An error occurred while fetching customer contacts.",
+                    error = ex.Message
+                });
+            }
+        }
+
     }
 }
