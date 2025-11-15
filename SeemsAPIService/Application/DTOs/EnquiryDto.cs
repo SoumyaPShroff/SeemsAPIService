@@ -1,0 +1,63 @@
+﻿namespace SeemsAPIService.Application.DTOs
+{
+    public class EnquiryDto
+    {
+        public string enquiryno { get; set; }
+        public Int64 customer_id { get; set; }
+        public Int64 location_id { get; set; }
+        public Int64 contact_id { get; set; }
+        public Int64 currency_id { get; set; }
+        public string inputreceivedthru { get; set; }
+        public string design { get; set; }
+        public string library { get; set; }
+        public string qacam { get; set; }
+        public string dfm { get; set; }
+        public string layout_fab { get; set; }
+        public string layout_testing { get; set; }
+        public string layout_others { get; set; }
+        public string layoutbyid { get; set; }
+        public string si { get; set; }
+        public string pi { get; set; }
+        public string emi_net_level { get; set; }
+        public string emi_system_level { get; set; }
+        public string thermal_board_level { get; set; }
+        public string thermal_system_level { get; set; }
+        public string analysis_others { get; set; }
+        public string analysisbyid { get; set; }
+        public string npi_fab { get; set; }
+        public string asmb { get; set; }
+        public string npi_testing { get; set; }
+        public string npi_others { get; set; }
+        public string hardware { get; set; }
+        public string software { get; set; }
+        public string fpg { get; set; }
+        public string npibyid { get; set; }
+        public string quotation_request_lastdate { get; set; }
+        public string govt_tender { get; set; }
+        public string completeresponsibilityid { get; set; }
+        public string salesresponsibilityid { get; set; }
+        public string status { get; set; }
+        public string Remarks { get; set; }
+        public string uploadedfilename { get; set; }
+        public string createdBy { get; set; }
+        public string createdOn { get; set; }
+        public string layout { get; set; }
+        public string tool { get; set; }
+        public string enquirytype { get; set; }
+        public string jobnames { get; set; }
+         public string appendreq { get; set; }
+        public string type { get; set; }
+        public string statename { get; set; }
+        public string dfa { get; set; }
+        public string VA_Assembly { get; set; }
+        public string DesignOutSource { get; set; }
+        public string NPINew_BOMProc { get; set; }
+        public string NPINew_Fab { get; set; }
+        public string NPINew_Assbly { get; set; }
+        public string NPINew_Testing { get; set; }
+        public string NPINewbyid { get; set; }
+        public string npinew_jobwork { get; set; }
+
+        public string ReferenceBy { get; set; }
+    }
+}
