@@ -191,7 +191,7 @@ namespace SeemsAPIService.API.Controllers
                 });
             }
         }
-        
+
         private string GenerateEnquiryNumber()
         {
             var currentYear = DateTime.Now.Month <= 3
@@ -219,12 +219,11 @@ namespace SeemsAPIService.API.Controllers
                 if (enquiry.customer_id == 0 ||
                     enquiry.contact_id == 0 ||
                     string.IsNullOrWhiteSpace(enquiry.type) ||
-                    enquiry.currency_id == 0 ||
+                 //   enquiry.currency_id == 0 ||
                     string.IsNullOrWhiteSpace(enquiry.inputreceivedthru) ||
                     string.IsNullOrWhiteSpace(enquiry.salesresponsibilityid) ||
                     string.IsNullOrWhiteSpace(enquiry.completeresponsibilityid) ||
                     string.IsNullOrWhiteSpace(enquiry.govt_tender) ||
-                    string.IsNullOrWhiteSpace(enquiry.quotation_request_lastdate) ||
                     string.IsNullOrWhiteSpace(enquiry.createdBy))
                 {
                     return BadRequest(new { message = "Missing required fields" });
@@ -262,7 +261,7 @@ namespace SeemsAPIService.API.Controllers
                     completeresponsibilityid = enquiry.completeresponsibilityid,
                     quotation_request_lastdate = enquiry.quotation_request_lastdate,
                     createdBy = enquiry.createdBy,
-                    createdOn = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                    createdOn = DateTime.Now,
                     location_id = enquiry.location_id,
 
                     // 🔹 Optional enum/string fields
@@ -335,107 +334,46 @@ namespace SeemsAPIService.API.Controllers
             return value.ToUpper() == "YES" ? "YES" : "NO";
         }
 
+        [HttpGet("EnquiryDetailsByEnquiryno/{enquiryno}")]
+        public async Task<IActionResult> EnquiryDetailsByEnquiryno(string enquiryno)
+        {
+            try
+            {
+                var enquiry = await _context.se_enquiry
+                    .Where(e => e.enquiryno == enquiryno)
+                    .ToListAsync();  
 
-        //public async Task<IActionResult> AddEnquiryData([FromForm] EnquiryDto enquiry, IFormFile? file)
-        //{
-        //    try
-        //    {
-        //        string? savedFilePath = null;
+                if (enquiry == null)
+                    return NotFound("No enquiry data found for the selected enquiry.");
 
-        //        if (file != null && file.Length > 0)
-        //        {
-        //            // Folder path — you can make this configurable
-        //            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "UploadedFiles");
-        //            if (!Directory.Exists(uploadsFolder))
-        //                Directory.CreateDirectory(uploadsFolder);
+                return Ok(enquiry);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "An error occurred while fetching enquiries.",
+                    error = ex.Message
+                });
+            }
+        }
+        [HttpGet("RptViewEnquiryData")]
+        public async Task<List<RptViewEnquiryData>> RptEnquiryData(string? startdate = null, string? enddate = null)
+        {
+            string sql;
 
-        //            // Create unique filename
-        //            var uniqueFileName = $"{Guid.NewGuid()}_{file.FileName}";
-        //            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+            // If start/end are not provided → call SP without parameters (load all)
+            if (string.IsNullOrEmpty(startdate) || string.IsNullOrEmpty(enddate))
+            {
+                sql = "CALL sp_ViewEnqData(NULL, NULL)";
+            }
+            else
+            {
+                sql = $"CALL sp_ViewEnqData('{startdate}', '{enddate}')";
+            }
 
-        //            using (var stream = new FileStream(filePath, FileMode.Create))
-        //            {
-        //                await file.CopyToAsync(stream);
-        //            }
-
-        //            savedFilePath = Path.Combine("UploadedFiles", uniqueFileName);
-        //        }
-        //        // Example: assuming you're using Entity Framework Core
-        //        var newEnquiry = new se_enquiry
-        //        {
-        //            enquiryno = GenerateEnquiryNumber(),
-        //            customer_id = enquiry.customer_id,
-        //            location_id = enquiry.location_id,
-        //            contact_id = enquiry.contact_id,
-        //            currency_id = enquiry.currency_id,
-        //            inputreceivedthru = enquiry.inputreceivedthru,
-        //            design = enquiry.design,
-        //            library = enquiry.library,
-        //            qacam = enquiry.qacam,
-        //            dfm = enquiry.dfm,
-        //            layout_fab = enquiry.layout_fab,
-        //            layout_testing = enquiry.layout_testing,
-        //            layout_others = enquiry.layout_others,
-        //            layoutbyid = enquiry.layoutbyid,
-        //            si = enquiry.si,
-        //            pi = enquiry.pi,
-        //            emi_net_level = enquiry.emi_net_level,
-        //            emi_system_level = enquiry.emi_system_level,
-        //            thermal_board_level = enquiry.thermal_board_level,
-        //            thermal_system_level = enquiry.thermal_system_level,
-        //            analysis_others = enquiry.analysis_others,
-        //            analysisbyid = enquiry.analysisbyid,
-        //            procurement = enquiry.procurement,
-        //            npi_fab = enquiry.npi_fab,
-        //            asmb = enquiry.asmb,
-        //            npi_testing = enquiry.npi_testing,
-        //            npi_others = enquiry.npi_others,
-        //            npibyid = enquiry.npibyid,
-        //            hardware = enquiry.hardware,
-        //            software = enquiry.software,
-        //            fpg = enquiry.fpg,
-        //            hardware_testing = enquiry.hardware_testing,
-        //            hardware_others = enquiry.hardware_others,
-        //            quotation_request_lastdate = enquiry.quotation_request_lastdate,
-        //            govt_tender = enquiry.govt_tender,
-        //            completeresponsibilityid = enquiry.completeresponsibilityid,
-        //            salesresponsibilityid = enquiry.salesresponsibilityid,
-        //            status = "Open",
-        //            Remarks = enquiry.Remarks,
-        //            uploadedfilename = savedFilePath,
-        //            createdBy = enquiry.createdBy,
-        //            enquirytype = enquiry.enquirytype,
-        //            tool = enquiry.tool,
-        //            jobnames = enquiry.jobnames,
-        //            appendreq = enquiry.appendreq,
-        //            esti = enquiry.esti,
-        //            type = enquiry.type,
-        //            dfa = enquiry.dfa,
-        //            Rfxno = enquiry.Rfxno,
-        //            VA_Assembly = enquiry.VA_Assembly,
-        //            VA_Outsourcing = enquiry.VA_Outsourcing,
-        //            NPINew_BOMProc = enquiry.NPINew_BOMProc,
-        //            NPINew_Fab = enquiry.NPINew_Fab,
-        //            NPINew_Assbly = enquiry.NPINew_Assbly,
-        //            npinew_jobwork = enquiry.npinew_jobwork,
-        //            NPINew_Testing = enquiry.NPINew_Testing,
-        //            NPINewbyid = enquiry.NPINewbyid,
-        //            tm = enquiry.tm,
-        //            DesignOutSource = enquiry.DesignOutSource,
-        //            ReferenceBy = enquiry.ReferenceBy
-        //  };
-
-        //        _context.se_enquiry.Add(newEnquiry);
-        //        await _context.SaveChangesAsync();
-
-        //        return Ok(new { message = "Enquiry saved successfully.", filePath = savedFilePath });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(500, new { message = "Error saving enquiry", details = ex.Message });
-        //    }
-        //}
-
+            return await _context.RptViewEnquiryData.FromSqlRaw(sql).ToListAsync();
+        }
 
     }
 }
