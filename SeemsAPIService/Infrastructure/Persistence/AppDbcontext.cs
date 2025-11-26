@@ -40,6 +40,8 @@ namespace SeemsAPIService.Infrastructure.Persistence
         public DbSet<se_customer_contacts>  se_customer_contacts { get; set; }
         public DbSet<se_enquiry> se_enquiry { get; set; }
         public DbSet<RptViewEnquiryData> RptViewEnquiryData { get; set; }
+        public DbSet<states_ind> states_ind { get; set; }
+        public DbSet<poenquiries> poenquiries { get; set; }
 
 
         public async Task<object> GetTentativeQuotedOrders()

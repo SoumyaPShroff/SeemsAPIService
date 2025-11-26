@@ -66,6 +66,11 @@ namespace SeemsAPIService.API.Controllers
                 if (PCBTools == null || !PCBTools.Any())
                     return NotFound("No PCBTools found.");
 
+                // Add additional entry "-" (make sure no duplicate if not desired)
+                if (!PCBTools.Contains("-"))
+                    PCBTools.Insert(0, "-");     // add on top; use Add() if you want at bottom
+
+
                 return Ok(PCBTools);
             }
             catch (Exception ex)

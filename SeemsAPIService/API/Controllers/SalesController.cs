@@ -8,6 +8,7 @@ using SeemsAPIService.Infrastructure.Persistence;
 using System.Data;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography;
+using SeemsAPIService.Application.Services;
 
 namespace SeemsAPIService.API.Controllers
 {
@@ -16,6 +17,7 @@ namespace SeemsAPIService.API.Controllers
     public class SalesController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly EmailTriggerService _emailTriggerService;
         public SalesController(AppDbContext context)
         {
             _context = context;
@@ -219,7 +221,6 @@ namespace SeemsAPIService.API.Controllers
                 if (enquiry.customer_id == 0 ||
                     enquiry.contact_id == 0 ||
                     string.IsNullOrWhiteSpace(enquiry.type) ||
-                 //   enquiry.currency_id == 0 ||
                     string.IsNullOrWhiteSpace(enquiry.inputreceivedthru) ||
                     string.IsNullOrWhiteSpace(enquiry.salesresponsibilityid) ||
                     string.IsNullOrWhiteSpace(enquiry.completeresponsibilityid) ||
@@ -254,7 +255,7 @@ namespace SeemsAPIService.API.Controllers
                     customer_id = enquiry.customer_id,
                     contact_id = enquiry.contact_id,
                     type = enquiry.type,
-                    statename = enquiry.statename,
+                    statename = enquiry.statename ?? "-",
                     currency_id = enquiry.currency_id,
                     inputreceivedthru = enquiry.inputreceivedthru,
                     salesresponsibilityid = enquiry.salesresponsibilityid,
@@ -311,11 +312,34 @@ namespace SeemsAPIService.API.Controllers
                     govt_tender = DefaultNo(enquiry.govt_tender),
                     jobnames = enquiry.jobnames ?? "",
                     appendreq = enquiry.appendreq ?? "",
-                    ReferenceBy = enquiry.ReferenceBy ?? ""
+                    ReferenceBy = enquiry.ReferenceBy ?? "",
+                    tm = enquiry.tm,
                 };
 
                 _context.se_enquiry.Add(newEnquiry);
                 await _context.SaveChangesAsync();
+
+                //var subject = $"New Enquiry Created - {newEnquiry.enquiryno}";
+                //var body = $@"
+                //            Hello,
+                //            A new enquiry has been created.
+
+                //            Enquiry No: {newEnquiry.enquiryno}
+                //            Customer: {enquiry.customer_id}
+                //            Location: {enquiry.location_id}
+                //            Contact: {enquiry.contact_id}
+
+                //            Created By: {enquiry.createdBy}
+                //            Created On: {DateTime.Now:dd-MMM-yyyy hh:mm tt}
+
+                //            Thank you.
+                //            ";
+                //var domainlist = $@" 
+
+                //";
+
+                ////send email
+                //await _emailTriggerService.SendEmailAsync("avinash_c@siennaecad.com", subject, body, domainlist);
 
                 return Ok(new { message = "Enquiry saved successfully", filePath = savedFilePath });
             }
@@ -324,6 +348,106 @@ namespace SeemsAPIService.API.Controllers
                 return StatusCode(500, new { message = "Error saving enquiry", details = ex.Message });
             }
         }
+
+        [HttpPut("EditEnquiryData")]
+        public async Task<IActionResult> EditEnquiry([FromForm] EnquiryDto enquiry, IFormFile? file)
+        {
+            try
+            {
+                var existing = await _context.se_enquiry
+                    .FirstOrDefaultAsync(e => e.enquiryno == enquiry.enquiryno);
+
+                if (existing == null)
+                    return NotFound(new { message = "Enquiry not found" });
+
+                // 🔹 Update only the editable fields
+                existing.customer_id = enquiry.customer_id;
+                existing.contact_id = enquiry.contact_id;
+                existing.type = enquiry.type;
+                existing.statename = enquiry.statename ?? "-";
+                existing.currency_id = enquiry.currency_id;
+                existing.inputreceivedthru = enquiry.inputreceivedthru;
+                existing.salesresponsibilityid = enquiry.salesresponsibilityid;
+                existing.completeresponsibilityid = enquiry.completeresponsibilityid;
+                existing.quotation_request_lastdate = enquiry.quotation_request_lastdate;
+                existing.location_id = enquiry.location_id;
+
+                // 🔹 Update optional section fields
+                existing.design = DefaultNo(enquiry.design);
+                existing.library = DefaultNo(enquiry.library);
+                existing.qacam = DefaultNo(enquiry.qacam);
+                existing.dfm = enquiry.dfm ?? "";
+                existing.layout_fab = DefaultNo(enquiry.layout_fab);
+                existing.layout_testing = DefaultNo(enquiry.layout_testing);
+                existing.layout_others = enquiry.layout_others ?? "";
+                existing.layoutbyid = enquiry.layoutbyid ?? "";
+                existing.dfa = DefaultNo(enquiry.dfa);
+
+                existing.si = DefaultNo(enquiry.si);
+                existing.pi = DefaultNo(enquiry.pi);
+                existing.emi_net_level = DefaultNo(enquiry.emi_net_level);
+                existing.emi_system_level = DefaultNo(enquiry.emi_system_level);
+                existing.thermal_board_level = DefaultNo(enquiry.thermal_board_level);
+                existing.thermal_system_level = DefaultNo(enquiry.thermal_system_level);
+                existing.analysis_others = enquiry.analysis_others ?? "";
+                existing.analysisbyid = enquiry.analysisbyid ?? "";
+
+                existing.npi_fab = DefaultNo(enquiry.npi_fab);
+                existing.asmb = DefaultNo(enquiry.asmb);
+                existing.npi_testing = DefaultNo(enquiry.npi_testing);
+                existing.npi_others = enquiry.npi_others ?? "";
+                existing.hardware = DefaultNo(enquiry.hardware);
+                existing.software = DefaultNo(enquiry.software);
+                existing.fpg = DefaultNo(enquiry.fpg);
+                existing.VA_Assembly = DefaultNo(enquiry.VA_Assembly);
+                existing.DesignOutSource = DefaultNo(enquiry.DesignOutSource);
+                existing.npibyid = enquiry.npibyid ?? "";
+
+                existing.NPINew_BOMProc = DefaultNo(enquiry.NPINew_BOMProc);
+                existing.NPINew_Fab = DefaultNo(enquiry.NPINew_Fab);
+                existing.NPINew_Assbly = DefaultNo(enquiry.NPINew_Assbly);
+                existing.NPINew_Testing = DefaultNo(enquiry.NPINew_Testing);
+                existing.NPINewbyid = enquiry.NPINewbyid ?? "";
+                existing.npinew_jobwork = DefaultNo(enquiry.npinew_jobwork);
+
+                existing.Remarks = enquiry.Remarks ?? "";
+                existing.enquirytype = enquiry.enquirytype ?? "";
+                existing.tool = enquiry.tool ?? "";
+                existing.govt_tender = DefaultNo(enquiry.govt_tender);
+                existing.jobnames = enquiry.jobnames ?? "";
+                existing.appendreq = enquiry.appendreq ?? "";
+                existing.ReferenceBy = enquiry.ReferenceBy ?? "";
+                existing.tm = enquiry.tm;
+
+                // 🔹 File upload on Edit (optional)
+                if (file != null && file.Length > 0)
+                {
+                    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "UploadedFiles");
+                    if (!Directory.Exists(uploadsFolder))
+                        Directory.CreateDirectory(uploadsFolder);
+
+                    var uniqueFileName = $"{Guid.NewGuid()}_{file.FileName}";
+                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                    using var stream = new FileStream(filePath, FileMode.Create);
+                    await file.CopyToAsync(stream);
+
+                    existing.uploadedfilename = Path.Combine("UploadedFiles", uniqueFileName);
+                }
+
+                existing.createdOn = DateTime.Now; 
+                existing.createdBy =  enquiry.createdBy;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Enquiry edited successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error editing enquiry", details = ex.Message });
+            }
+        }
+
 
         // Helper method
         private string DefaultNo(string? value)
@@ -374,6 +498,41 @@ namespace SeemsAPIService.API.Controllers
 
             return await _context.RptViewEnquiryData.FromSqlRaw(sql).ToListAsync();
         }
+        [HttpGet("States")]
+        public async Task<IActionResult> States()
+        {
+            try
+            {
+                var states = await _context.states_ind.OrderBy(s => s.State).Select(s => new {s.State }).ToListAsync();
 
+                if (states == null || !states.Any())
+                    return NotFound("No customers found.");
+
+                return Ok(states);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "An error occurred while fetching states.", error = ex.Message });
+            }
+        }
+        [HttpGet("poenquiries")]
+        public async Task<IActionResult> poenquiries()
+        {
+            try
+            {
+                var poenqs = await _context.poenquiries.ToListAsync();
+
+                if (poenqs == null || !poenqs.Any())
+                    return NotFound("No poenquiries found.");
+
+                return Ok(poenqs);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "An error occurred while fetching poenquiries.", error = ex.Message });
+            }
+        }
     }
 }

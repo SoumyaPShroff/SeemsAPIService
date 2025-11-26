@@ -10,9 +10,8 @@ namespace SeemsAPIService.Domain.Entities
         public long customer_id { get; set; }
         public long location_id { get; set; }
         public long contact_id { get; set; }
-       // public Int64 currency_id { get; set; }
         public string? currency_id { get; set; }
-        public string inputreceivedthru { get; set; }
+        public string? inputreceivedthru { get; set; }
         public string? design { get; set; } = "NO";
         public string? library { get; set; } = "NO";
         public string? qacam { get; set; } = "NO";
@@ -38,7 +37,7 @@ namespace SeemsAPIService.Domain.Entities
         public string? software { get; set; } = "NO";
         public string? fpg { get; set; } = "NO";
         public string? npibyid { get; set; }
-        public DateTime? quotation_request_lastdate { get; set; }
+        public DateTime  quotation_request_lastdate { get; set; }
         public string govt_tender { get; set; } = "NO";
         public string completeresponsibilityid { get; set; }
         public string salesresponsibilityid { get; set; }
@@ -63,7 +62,7 @@ namespace SeemsAPIService.Domain.Entities
         public string? NPINew_Assbly { get; set; } = "NO";
         public string? NPINew_Testing { get; set; } = "NO";
         public string? NPINewbyid { get; set; }
-        public string npinew_jobwork { get; set; } = "NO";
+        public string? npinew_jobwork { get; set; } = "NO";
         public string? ReferenceBy { get; set; }
     }
 }

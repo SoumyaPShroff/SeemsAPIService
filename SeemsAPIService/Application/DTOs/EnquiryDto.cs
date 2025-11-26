@@ -7,7 +7,7 @@
         public long location_id { get; set; }
         public long contact_id { get; set; }
         public string?  currency_id { get; set; }
-        public string inputreceivedthru { get; set; }
+        public string? inputreceivedthru { get; set; }
         public string? design { get; set; }
         public string? library { get; set; }
         public string? qacam { get; set; }
@@ -47,7 +47,7 @@
         public string? jobnames { get; set; }
         public string appendreq { get; set; }
         public string type { get; set; }
-        public string statename { get; set; }
+        public string? statename { get; set; }
         public string? dfa { get; set; }
         public string? VA_Assembly { get; set; }
         public string? DesignOutSource { get; set; }

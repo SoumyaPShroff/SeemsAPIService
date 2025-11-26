@@ -6,6 +6,7 @@ using MySqlConnector;
 using SeemsAPIService.Application.Services;
 using SeemsAPIService.Domain.Entities;
 using SeemsAPIService.Infrastructure.Persistence;
+using System.Linq;
 using System.Text;
 
 namespace SeemsAPIService.API.Controllers
@@ -290,22 +291,55 @@ namespace SeemsAPIService.API.Controllers
                     new { message = "An error occurred while fetching designMngrs.", error = ex.Message });
             }
         }
+        public class SalesManagerDto
+        {
+            public string ID { get; set; } = string.Empty;
+            public string Name { get; set; } = string.Empty;
+        }
         [HttpGet("SalesManagers")]
         public async Task<IActionResult> SalesManagers()
         {
             try
             {
-                var salesMngrs = await _context.setting_employee.Where(s => s.costcenter_sales == "YES" && s.costcenter_status == "Active").Select(s => new { s.HOPC1ID, s.HOPC1NAME }).ToListAsync();
+                // Project setting_employee into the same DTO
+                var settingList = await _context.setting_employee
+                    .Where(s => s.costcenter_sales == "YES" && s.costcenter_status == "Active")
+                    .Select(s => new SalesManagerDto
+                    {
+                        ID = s.HOPC1ID,
+                        Name = s.HOPC1NAME
+                    })
+                    .ToListAsync();
 
-                if (salesMngrs == null || !salesMngrs.Any())
-                    return NotFound("No salesMngrs found.");
+                // Project general_employee into the same DTO
+                var generalList = await _context.general_employee
+                    .Where(g => g.Functional == "Selling"
+                             && g.JobTitle.Contains("sales")
+                             && g.EmpStatus == "Active")
+                    .Select(g => new SalesManagerDto
+                    {
+                        ID = g.IDno,
+                        Name = g.Name
+                    })
+                    .ToListAsync();
 
-                return Ok(salesMngrs);
+                // Combine and de-duplicate by ID (keep the first occurrence)
+                var combined = settingList
+                    .Concat(generalList)
+                    .GroupBy(x => x.ID)
+                    .Select(g => g.First())
+                    .OrderBy(x => x.Name)   // optional: order by name
+                    .ToList();
+
+                if (combined == null || !combined.Any())
+                    return NotFound("No sales managers found.");
+
+                return Ok(combined);
             }
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
-                    new { message = "An error occurred while fetching salesMngrs.", error = ex.Message });
+                    new { message = "An error occurred while fetching sales managers.", error = ex.Message });
             }
         }
         [HttpGet("salesnpiusers")]
