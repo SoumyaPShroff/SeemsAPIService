@@ -51,7 +51,6 @@ namespace SeemsAPIService.API.Controllers
             }
         }
 
-        //  [HttpPost("resetpassword/{ploginid}/{pNewpassword}")]
         [HttpPost("ResetPassword/{ploginid}/{pNewpassword}")]
         public async Task<IActionResult> ResetPassword(string ploginid, string pNewpassword)
         {
@@ -60,7 +59,6 @@ namespace SeemsAPIService.API.Controllers
                 if (string.IsNullOrWhiteSpace(ploginid) || string.IsNullOrWhiteSpace(pNewpassword))
                     return BadRequest(new { message = "Login ID and new password are required." });
 
-                //  var user = await _context.Login.FirstOrDefaultAsync(l => l.LoginID == ploginid);
                 // 🔍 Step 1: Find user by login ID
                 var user = await _context.Login
                     .Where(l => l.LoginID == ploginid)
@@ -291,8 +289,7 @@ namespace SeemsAPIService.API.Controllers
         {
             try
             {
-                // var analyMngrs = await _context.setting_employee.Where(s => s.costcenter_analysis == "YES" && s.costcenter_status == "Active").Select(s => new { s.HOPC1ID, s.HOPC1NAME }).ToListAsync();
-                 var analyMngrs = await (
+                   var analyMngrs = await (
                      from s in _context.setting_employee
                      join l in _context.Login
                          on s.HOPC1ID equals l.LoginID
@@ -321,8 +318,7 @@ namespace SeemsAPIService.API.Controllers
         {
             try
             {
-               // var designMngrs = await _context.setting_employee.Where(s => s.design == "YES" && s.costcenter_status == "Active").Select(s => new { s.HOPC1ID, s.HOPC1NAME }).Distinct().ToListAsync();
-               var designMngrs = await (
+                var designMngrs = await (
                     from s in _context.setting_employee
                     join l in _context.Login
                         on s.HOPC1ID equals l.LoginID
@@ -358,15 +354,6 @@ namespace SeemsAPIService.API.Controllers
         {
             try
             {
-                // Project setting_employee into the same DTO
-                //var settingList = await _context.setting_employee
-                //    .Where(s => s.costcenter_sales == "YES" && s.costcenter_status == "Active")
-                //    .Select(s => new SalesManagerDto
-                //    {
-                //        ID = s.HOPC1ID,
-                //        Name = s.HOPC1NAME
-                //    })
-                //    .ToListAsync();
                 var settingList = await (
                     from s in _context.setting_employee
                     join l in _context.Login
@@ -380,18 +367,6 @@ namespace SeemsAPIService.API.Controllers
                         EmailID = l.EmailID
                     }
                 ).ToListAsync();
-
-                // Project general_employee into the same DTO
-                //var generalList = await _context.general_employee
-                //    .Where(g => g.Functional == "Selling"
-                //             && g.JobTitle.Contains("sales")
-                //             && g.EmpStatus == "Active")
-                //    .Select(g => new SalesManagerDto
-                //    {
-                //        ID = g.IDno,
-                //        Name = g.Name
-                //    })
-                //    .ToListAsync();
                 var generalList = await (
                     from g in _context.general_employee
                     join l in _context.Login
@@ -432,7 +407,6 @@ namespace SeemsAPIService.API.Controllers
         {
             try
             {
-                //  var salesnpiMngrs = await _context.view_salesnpiusers.Select(s => new { s.IDno, s.Name }).ToListAsync();
                 var salesnpiMngrs = await (
                       from s in _context.view_salesnpiusers
                       join l in _context.Login

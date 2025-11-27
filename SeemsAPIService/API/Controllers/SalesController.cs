@@ -93,7 +93,6 @@ namespace SeemsAPIService.API.Controllers
         }
 
         [HttpGet("Customers")]
-        // public async Task<IActionResult> GetCustomers()
         public async Task<IActionResult> Customers()
         {
             try
@@ -150,6 +149,7 @@ namespace SeemsAPIService.API.Controllers
                 });
             }
         }
+
         [HttpGet("customercontacts")]
         public async Task<IActionResult> customercontacts([FromQuery] int? customer_id, int? location_id)
         {
@@ -522,7 +522,6 @@ namespace SeemsAPIService.API.Controllers
             }
         }
 
-
         // Helper method
         private string DefaultNo(string? value)
         {
@@ -555,6 +554,7 @@ namespace SeemsAPIService.API.Controllers
                 });
             }
         }
+
         [HttpGet("RptViewEnquiryData")]
         public async Task<List<RptViewEnquiryData>> RptEnquiryData(string? startdate = null, string? enddate = null)
         {
@@ -572,6 +572,7 @@ namespace SeemsAPIService.API.Controllers
 
             return await _context.RptViewEnquiryData.FromSqlRaw(sql).ToListAsync();
         }
+
         [HttpGet("States")]
         public async Task<IActionResult> States()
         {
@@ -590,6 +591,7 @@ namespace SeemsAPIService.API.Controllers
                     new { message = "An error occurred while fetching states.", error = ex.Message });
             }
         }
+
         [HttpGet("poenquiries")]
         public async Task<IActionResult> poenquiries()
         {
