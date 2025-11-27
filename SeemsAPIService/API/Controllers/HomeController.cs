@@ -121,24 +121,56 @@ namespace SeemsAPIService.API.Controllers
         }
 
 
-        [HttpGet("UserName/{pLoginId}")]
-        public IActionResult getUserName(string pLoginId)
+        //[HttpGet("UserName/{pLoginId}")]
+        //public IActionResult getUserName(string pLoginId)
 
+        //{
+        //    try
+        //    {
+        //        var userName = _context.general_employee.Where(l => l.IDno == pLoginId).Select(l => l.Name).FirstOrDefault();
+
+        //        if (userName == null)
+        //            return NotFound($"No user found with LoginID '{pLoginId}'");
+
+        //        return Ok(userName);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw ex;
+        //    }
+        //}
+
+        [HttpGet("EmailId/{loginIds}")]
+        public IActionResult GetEmailIDs(string loginIds)
         {
             try
             {
-                var userName = _context.general_employee.Where(l => l.IDno == pLoginId).Select(l => l.Name).FirstOrDefault();
+                var ids = loginIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                  .Select(id => id.Trim())
+                                  .ToList();
 
-                if (userName == null)
-                    return NotFound($"No user found with LoginID '{pLoginId}'");
+                var emailList = (
+                    from login in _context.Login
+                    join emp in _context.general_employee
+                        on login.LoginID equals emp.IDno
+                    where ids.Contains(login.LoginID)
+                        && emp.EmpStatus == "Active"
+                    select login.EmailID
+                ).Distinct().ToList();
 
-                return Ok(userName);
+                if (emailList == null || emailList.Count == 0)
+                    return NotFound($"No email IDs found for LoginID(s): {loginIds}");
+
+                return emailList.Count == 1
+                    ? Ok(emailList.First())  // return string for single
+                    : Ok(emailList);         // return list for multiple
             }
             catch (Exception ex)
             {
-                throw ex;
+                return StatusCode(500, ex.Message);
             }
         }
+
 
         [HttpGet("ManagerCostcenterInfo/{pLoginId}")]
         public IActionResult ManagerCostcenterInfo(string pLoginId)
@@ -187,7 +219,7 @@ namespace SeemsAPIService.API.Controllers
             {
                 // Get the record for that role
                 var roleRecord = await _context.employeeroles
-                    .FirstOrDefaultAsync(e => e.Roles == pRole);
+                    .FirstOrDefaultAsync(e => e.Roles == pRole.Trim());
 
                 if (roleRecord == null)
                     //return NotFound("Role not found");
@@ -235,13 +267,12 @@ namespace SeemsAPIService.API.Controllers
             }
         }
 
-
         [HttpGet("AllActiveEmployees")]
         public async Task<IActionResult> AllActiveEmployees()
         {
             try
             {
-                var activeEmps = await _context.general_employee.Where(e => e.EmpStatus == "Active").Select(e => new { e.IDno, e.Name }).ToListAsync();
+                var activeEmps = await _context.general_employee.Where(e => e.EmpStatus == "Active").Select(e => new { e.IDno, e.Name, e.EmailId }).ToListAsync();
 
                 if (activeEmps == null || !activeEmps.Any())
                     return NotFound("No active employees found.");
@@ -260,8 +291,20 @@ namespace SeemsAPIService.API.Controllers
         {
             try
             {
-                var analyMngrs = await _context.setting_employee.Where(s => s.costcenter_analysis == "YES" && s.costcenter_status == "Active").Select(s => new { s.HOPC1ID, s.HOPC1NAME }).ToListAsync();
-
+                // var analyMngrs = await _context.setting_employee.Where(s => s.costcenter_analysis == "YES" && s.costcenter_status == "Active").Select(s => new { s.HOPC1ID, s.HOPC1NAME }).ToListAsync();
+                 var analyMngrs = await (
+                     from s in _context.setting_employee
+                     join l in _context.Login
+                         on s.HOPC1ID equals l.LoginID
+                     where s.costcenter_analysis == "YES"
+                        && s.costcenter_status == "Active"
+                     select new
+                     {
+                         s.HOPC1ID,
+                         s.HOPC1NAME,
+                         l.EmailID
+                     }
+                 ).ToListAsync();
                 if (analyMngrs == null || !analyMngrs.Any())
                     return NotFound("No analyMngrs found.");
 
@@ -278,8 +321,20 @@ namespace SeemsAPIService.API.Controllers
         {
             try
             {
-                var designMngrs = await _context.setting_employee.Where(s => s.design == "YES" && s.costcenter_status == "Active").Select(s => new { s.HOPC1ID, s.HOPC1NAME }).Distinct().ToListAsync();
-
+               // var designMngrs = await _context.setting_employee.Where(s => s.design == "YES" && s.costcenter_status == "Active").Select(s => new { s.HOPC1ID, s.HOPC1NAME }).Distinct().ToListAsync();
+               var designMngrs = await (
+                    from s in _context.setting_employee
+                    join l in _context.Login
+                        on s.HOPC1ID equals l.LoginID
+                    where s.design == "YES"
+                       && s.costcenter_status == "Active"
+                    select new
+                    {
+                        s.HOPC1ID,
+                        s.HOPC1NAME,
+                        l.EmailID
+                    }
+                ).ToListAsync();
                 if (designMngrs == null || !designMngrs.Any())
                     return NotFound("No designMngrs found.");
 
@@ -295,6 +350,8 @@ namespace SeemsAPIService.API.Controllers
         {
             public string ID { get; set; } = string.Empty;
             public string Name { get; set; } = string.Empty;
+
+            public string EmailID { get; set; } = string.Empty;
         }
         [HttpGet("SalesManagers")]
         public async Task<IActionResult> SalesManagers()
@@ -302,26 +359,53 @@ namespace SeemsAPIService.API.Controllers
             try
             {
                 // Project setting_employee into the same DTO
-                var settingList = await _context.setting_employee
-                    .Where(s => s.costcenter_sales == "YES" && s.costcenter_status == "Active")
-                    .Select(s => new SalesManagerDto
+                //var settingList = await _context.setting_employee
+                //    .Where(s => s.costcenter_sales == "YES" && s.costcenter_status == "Active")
+                //    .Select(s => new SalesManagerDto
+                //    {
+                //        ID = s.HOPC1ID,
+                //        Name = s.HOPC1NAME
+                //    })
+                //    .ToListAsync();
+                var settingList = await (
+                    from s in _context.setting_employee
+                    join l in _context.Login
+                        on s.HOPC1ID equals l.LoginID
+                    where s.costcenter_sales == "YES"
+                       && s.costcenter_status == "Active"
+                    select new SalesManagerDto
                     {
                         ID = s.HOPC1ID,
-                        Name = s.HOPC1NAME
-                    })
-                    .ToListAsync();
+                        Name = s.HOPC1NAME,
+                        EmailID = l.EmailID
+                    }
+                ).ToListAsync();
 
                 // Project general_employee into the same DTO
-                var generalList = await _context.general_employee
-                    .Where(g => g.Functional == "Selling"
-                             && g.JobTitle.Contains("sales")
-                             && g.EmpStatus == "Active")
-                    .Select(g => new SalesManagerDto
+                //var generalList = await _context.general_employee
+                //    .Where(g => g.Functional == "Selling"
+                //             && g.JobTitle.Contains("sales")
+                //             && g.EmpStatus == "Active")
+                //    .Select(g => new SalesManagerDto
+                //    {
+                //        ID = g.IDno,
+                //        Name = g.Name
+                //    })
+                //    .ToListAsync();
+                var generalList = await (
+                    from g in _context.general_employee
+                    join l in _context.Login
+                        on g.IDno equals l.LoginID
+                    where g.Functional == "Selling"
+                       && g.JobTitle.Contains("sales")
+                       && g.EmpStatus == "Active"
+                    select new SalesManagerDto
                     {
                         ID = g.IDno,
-                        Name = g.Name
-                    })
-                    .ToListAsync();
+                        Name = g.Name,
+                        EmailID = l.EmailID
+                    }
+                ).ToListAsync();
 
                 // Combine and de-duplicate by ID (keep the first occurrence)
                 var combined = settingList
@@ -348,8 +432,18 @@ namespace SeemsAPIService.API.Controllers
         {
             try
             {
-                var salesnpiMngrs = await _context.view_salesnpiusers.Select(s => new { s.IDno, s.Name }).ToListAsync();
-
+                //  var salesnpiMngrs = await _context.view_salesnpiusers.Select(s => new { s.IDno, s.Name }).ToListAsync();
+                var salesnpiMngrs = await (
+                      from s in _context.view_salesnpiusers
+                      join l in _context.Login
+                          on s.IDno equals l.LoginID
+                      select new
+                      {
+                          s.IDno,
+                          s.Name,
+                          l.EmailID
+                      }
+                  ).ToListAsync();
                 if (salesnpiMngrs == null || !salesnpiMngrs.Any())
                     return NotFound("No salesnpiMngrs found.");
 
@@ -360,6 +454,29 @@ namespace SeemsAPIService.API.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     new { message = "An error occurred while fetching salesnpiMngrs.", error = ex.Message });
             }
+        }
+
+        [HttpGet("SalesEnq_Email_Recipients")]
+        public async Task<List<object>> SalesEnq_Email_Recipients()
+        {
+            var defaultMails =
+                from a in _context.Email_Recipients
+                join b in _context.Login on a.LoginId equals b.LoginID into g
+                from b in g.DefaultIfEmpty()
+                where a.Design == "1"
+                select new
+                {
+                    a.LoginId,
+                    a.EnqCreated_PositionInEmail,
+                    EmailID = b != null ? b.EmailID : null
+                };
+
+            // Project anonymous type to object
+            var result = await defaultMails
+                .Select(x => (object)x)
+                .ToListAsync();
+
+            return result;
         }
     }
 }

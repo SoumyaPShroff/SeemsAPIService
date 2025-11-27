@@ -1,0 +1,263 @@
+' BillingPlanner.aspx.vb (refactored)
+Imports System
+Imports System.Data
+Imports System.Data.Odbc
+Imports System.Globalization
+Imports System.Web.UI.DataVisualization.Charting
+
+Partial Class JOB_BillingPlanner
+    Inherits System.Web.UI.Page
+    Private ReadOnly Property CnString As String
+        Get
+            ' TODO: move to web.config and read via ConfigurationManager
+            Return System.Configuration.ConfigurationManager.ConnectionStrings("SeemsConnection").ConnectionString
+        End Get
+    End Property
+
+    Protected Sub Page_Load(sender As Object, e As EventArgs) Handles Me.Load
+        If Not IsPostBack Then
+            ' Auth check (unchanged)
+            If Session("login") Is Nothing OrElse String.IsNullOrEmpty(CStr(Session("login"))) Then
+                Response.Redirect("..\Loginpage.aspx")
+            End If
+
+            InitYearMonth()
+            BindProjectManagerDropdown() ' keeps your logic but simplified in a helper
+            ToggleMgmtOnlyFeatures()
+
+        End If
+    End Sub
+
+    Private Sub InitYearMonth()
+        ddlYear.Items.Clear()
+        Dim nowY = DateTime.Now.Year
+        For y = 2000 To nowY + 1
+            ddlYear.Items.Add(New ListItem(y.ToString(), y.ToString()))
+        Next
+        ddlYear.SelectedValue = nowY.ToString()
+
+        ddlMonth.Items.Clear()
+        For m = 1 To 12
+            ddlMonth.Items.Add(New ListItem(CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m), m.ToString()))
+        Next
+        ddlMonth.SelectedValue = DateTime.Now.Month.ToString()
+    End Sub
+
+    Private Sub ToggleMgmtOnlyFeatures()
+        Dim role = GetUserRole()
+        Dim isMgmt = IsManagement(role)
+        btnConfirmedOrders.Visible = isMgmt
+        lbloveralltarget.Visible = isMgmt
+        linkPreclosure.Visible = True
+    End Sub
+
+    Private Function GetUserRole() As String
+        Using cn As New OdbcConnection(CnString)
+            cn.Open()
+            Using cmd As New OdbcCommand("SELECT jobtitle FROM general_employee WHERE idno = ? AND TeamDescription <> 'NPI' AND EmpStatus='Active'", cn)
+                cmd.Parameters.AddWithValue("@p1", Session("login"))
+                Dim r = cmd.ExecuteScalar()
+                Return If(r IsNot Nothing, r.ToString(), "")
+            End Using
+        End Using
+    End Function
+
+    Private Function IsManagement(jobTitle As String) As Boolean
+        ' Collapse your giant OR-list into a few buckets.
+        If String.IsNullOrEmpty(jobTitle) Then Return False
+        Dim jt = jobTitle.ToLowerInvariant()
+        Return jt.Contains("CEO") _
+            OrElse jt.Contains("Vice President") _
+            OrElse jt.Contains("Manager Operations Planning & MR") _
+            OrElse jt.Contains("Manager - Sales") _
+            OrElse jt.Contains("Executive - Design Support") _
+            OrElse jt.Contains("Asst. Manager Sales") _
+            OrElse jt.Contains("Deputy Manager - HR") _
+            OrElse jt.Contains("Junior Executive - Design Support") _
+            OrElse jt.Contains("Senior Manager Sales") _
+            OrElse jt.Contains("Executive - Inside sales") _
+            OrElse jt.Contains("Sales Engineer") _
+            OrElse jt.Contains("Senior Sales Engineer") _
+            OrElse jt.Contains("AGM - Sales") _
+            OrElse jt.Contains("Senior Program Manager - Engineering") _
+            OrElse jt.Contains("Lead - Inside Sales") _
+            OrElse jt.Contains("Senior Program Manager - Engineering") _
+            OrElse jt.Contains("AGM - Engineering") _
+            OrElse jt.Contains("Senior Program Manager - Engineering") _
+            OrElse jt.Contains("Trainee - Sales") _
+            OrElse jt.Contains("Consultant") _
+            OrElse jt.Contains("Project Manager - Analysis") _
+            OrElse jt.Contains("Assistant Manager– Management Accounting") _
+            OrElse jt.Contains("Executive - Finance") _
+            OrElse jt.Contains("Junior Engineer- Sales") _
+            OrElse jt.Contains("Deputy Manager- Sales")
+    End Function
+
+    Private Sub BindProjectManagerDropdown()
+        ' Keep your existing “who sees what” logic, but parameterized and compact.
+        ' Example: show All/Select for top roles, otherwise restrict by reportto.
+        Dim role = GetUserRole()
+        Dim sql As String
+        Dim addAll As Boolean = False
+
+        If IsManagement(role) Then
+            addAll = True
+            sql = "SELECT DISTINCT CONCAT(HOPC1NAME,'--',s.costcenter) AS Name, s.costcenter FROM setting_employee s JOIN general_employee g ON g.idno = s.hopc1id "
+            sql = sql & " WHERE g.EmpStatus='Active'     AND s.costcenter <> '-' AND s.costcenter_status='Active' "
+            sql = sql & "  And s.costcenter Not IN (SELECT costcenter FROM excludedcostcenters)     And s.hopc1name Is Not NULL ORDER BY s.costcenter  "
+
+        Else
+            sql = "SELECT DISTINCT CONCAT(Name,'--',s.costcenter) AS Name, s.costcenter  FROM general_employee g  JOIN setting_employee s ON g.idno = s.hopc1id "
+            sql = sql & " WHERE (g.idno = ? Or g.reporttopersonid = ?)  And g.jobtitle Like '%Manager%'  AND g.EmpStatus='Active'   "
+            sql = sql & " And s.costcenter_status ='Active'   ORDER BY s.costcenter"
+        End If
+
+        Using cn As New OdbcConnection(CnString)
+            cn.Open()
+            Using cmd As New OdbcCommand(sql, cn)
+                If Not IsManagement(role) Then
+                    cmd.Parameters.AddWithValue("@p1", Session("login"))
+                    cmd.Parameters.AddWithValue("@p2", Session("login"))
+                End If
+                Using da As New OdbcDataAdapter(cmd)
+                    Dim dt As New DataTable()
+                    da.Fill(dt)
+                    DropDownList2.DataTextField = "Name"
+                    DropDownList2.DataValueField = "costcenter"
+                    DropDownList2.DataSource = dt
+                    DropDownList2.DataBind()
+                    DropDownList2.Visible = True
+                    If addAll Then DropDownList2.Items.Add("All")
+                    DropDownList2.Items.Add("Select")
+                    DropDownList2.SelectedValue = "Select"
+                End Using
+            End Using
+        End Using
+    End Sub
+
+    Protected Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
+        LoadData() 'LoadData(costcenter,month,year)
+    End Sub
+
+    Private Sub LoadData()
+        ' Resolve selected month range
+        Dim y = Integer.Parse(ddlYear.SelectedValue)
+        Dim m = Integer.Parse(ddlMonth.SelectedValue)
+        Dim startDt As New DateTime(y, m, 1)
+        Dim endDt As New DateTime(y, m, Date.DaysInMonth(y, m))
+
+        Dim costcenterFilter As Integer? = Nothing
+        If DropDownList2.Visible AndAlso Not String.IsNullOrEmpty(DropDownList2.SelectedValue) AndAlso DropDownList2.SelectedValue <> "All" AndAlso DropDownList2.SelectedValue <> "Select" Then
+            Dim c As Integer
+            If Integer.TryParse(DropDownList2.SelectedValue, c) Then costcenterFilter = c
+        End If
+
+        Dim role = GetUserRole()
+        Dim isMgmt = IsManagement(role)
+        Dim loginId = CStr(Session("login"))
+
+        Dim ds = FetchAllData_UsingSP(startDt, endDt, costcenterFilter, loginId, isMgmt)
+
+        ' 0) Main Grid
+        GridView2.DataSource = ds.Tables(0)
+        GridView2.DataBind()
+        GridView2.Visible = True
+
+        ' 1) Project Manager vs Billing (Chart5)
+        BindColumnVsPoint(Chart5, ds.Tables(1), "ProjectManager", "BilledAmount", "ProjMgrBillAmt", ds.Tables(2), "ProjectManager", "TargetAmount", "ProjMgrTgt")
+        lbl2.Visible = True : Chart5.Visible = True
+
+        ' 2) Overall Target vs Projection (Chart4)
+        BindColumnVsPoint(Chart4, ds.Tables(3), "Category", "Projection", "Grand Total", ds.Tables(3), "Category", "Target", "OverTgt")
+        lbl1.Visible = True : Chart4.Visible = True
+
+        ' 3) Segment (Design/VA/NPI/Analysis…) – Chart1
+        BindMultiSeries(Chart1, ds.Tables(4), "ReportingToPerson", "BilledAmount", "Design",
+                              ds.Tables(5), "ReportingToPerson", "BilledAmount", "VA",
+                              ds.Tables(6), "ReportingToPerson", "BilledAmount", "NPI",
+                              ds.Tables(7), "ReportingToPerson", "BilledAmount", "Analysis")
+        Label332.Visible = True : Chart1.Visible = True
+
+        ' 4) Optional: other charts (Chart8/Chart7) from ds.Tables(8..n)
+
+        ' Hide sensitive columns for non-mgmt
+        If Not isMgmt AndAlso GridView2.Columns.Count > 0 Then
+            ' Example: hide PoAmount / Invoice columns safely by name
+            HideColumnByHeader(GridView2, "PoAmount")
+            HideColumnByHeader(GridView2, "TotalInvoicedAmt")
+            HideColumnByHeader(GridView2, "PO Number")
+        End If
+    End Sub
+
+    Private Sub HideColumnByHeader(gv As GridView, headerContains As String)
+        If gv.HeaderRow Is Nothing Then Exit Sub
+        Dim idx As Integer = -1
+        For i = 0 To gv.HeaderRow.Cells.Count - 1
+            If gv.HeaderRow.Cells(i).Text.IndexOf(headerContains, StringComparison.OrdinalIgnoreCase) >= 0 Then
+                idx = i : Exit For
+            End If
+        Next
+        If idx >= 0 Then
+            gv.HeaderRow.Cells(idx).Visible = False
+            For Each r As GridViewRow In gv.Rows
+                r.Cells(idx).Visible = False
+            Next
+        End If
+    End Sub
+
+    Private Sub BindColumnVsPoint(ch As Chart,
+                                  colDt As DataTable, x1 As String, y1 As String, s1 As String,
+                                  ptDt As DataTable, x2 As String, y2 As String, s2 As String)
+        ch.Series(s1).Points.DataBind(colDt.AsEnumerable(), x1, y1, Nothing)
+        ch.Series(s2).Points.DataBind(ptDt.AsEnumerable(), x2, y2, Nothing)
+    End Sub
+
+    Private Sub BindMultiSeries(ch As Chart,
+                                dt1 As DataTable, x1 As String, y1 As String, s1 As String,
+                                dt2 As DataTable, x2 As String, y2 As String, s2 As String,
+                                dt3 As DataTable, x3 As String, y3 As String, s3 As String,
+                                dt4 As DataTable, x4 As String, y4 As String, s4 As String)
+        ch.Series(s1).Points.DataBind(dt1.AsEnumerable(), x1, y1, Nothing)
+        ch.Series(s2).Points.DataBind(dt2.AsEnumerable(), x2, y2, Nothing)
+        ch.Series(s3).Points.DataBind(dt3.AsEnumerable(), x3, y3, Nothing)
+        ch.Series(s4).Points.DataBind(dt4.AsEnumerable(), x4, y4, Nothing)
+    End Sub
+
+    ' New: call the SP and return all result sets in a DataSet
+    Private Function FetchAllData_UsingSP(startDt As DateTime,
+                                      endDt As DateTime,
+                                      costcenter As Integer?,
+                                      loginId As String,
+                                      isMgmt As Boolean) As DataSet
+        Dim ds As New DataSet()
+
+        ' p_month must be the first day of the selected month
+        Dim monthAnchor As New DateTime(startDt.Year, startDt.Month, 1)
+
+        Using cn As New OdbcConnection(CnString)
+            cn.Open()
+
+            ' ODBC + MySQL: use CALL with positional parameters
+            Using cmd As New OdbcCommand("CALL `BillingPlanner`(?,?,?,?,?,?)", cn)
+                'cmd.CommandType = CommandType.Text
+                'cmd.CommandTimeout = 180  ' optional, give heavy SPs some breathing room
+
+                ' Order matters for ODBC — match the SP signature exactly:
+                ' (IN p_month DATE, IN p_start DATE, IN p_end DATE, IN p_costcenter INT, IN p_login_id VARCHAR(50), IN p_is_mgmt TINYINT)
+
+                cmd.Parameters.Add(New OdbcParameter() With {.Value = monthAnchor})                              ' p_month
+                cmd.Parameters.Add(New OdbcParameter() With {.Value = startDt})                                  ' p_start
+                cmd.Parameters.Add(New OdbcParameter() With {.Value = endDt})                                    ' p_end
+                cmd.Parameters.Add(New OdbcParameter() With {.Value = If(costcenter.HasValue, CObj(costcenter.Value), DBNull.Value)}) ' p_costcenter
+                cmd.Parameters.Add(New OdbcParameter() With {.Value = loginId})                                  ' p_login_id
+                cmd.Parameters.Add(New OdbcParameter() With {.Value = If(isMgmt, 1, 0)})                         ' p_is_mgmt
+
+                Using da As New OdbcDataAdapter(cmd)
+                    da.Fill(ds)   ' will populate ds.Tables(0..7) from your 8 SELECTs
+                End Using
+            End Using
+        End Using
+
+        Return ds
+    End Function
+End Class

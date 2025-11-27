@@ -2,13 +2,16 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualBasic;
+using Newtonsoft.Json;
 using SeemsAPIService.Application.DTOs;
+using SeemsAPIService.Application.Services;
 using SeemsAPIService.Domain.Entities;
 using SeemsAPIService.Infrastructure.Persistence;
+using System.Collections.Generic;
 using System.Data;
+using System.Numerics;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography;
-using SeemsAPIService.Application.Services;
 
 namespace SeemsAPIService.API.Controllers
 {
@@ -18,9 +21,12 @@ namespace SeemsAPIService.API.Controllers
     {
         private readonly AppDbContext _context;
         private readonly EmailTriggerService _emailTriggerService;
-        public SalesController(AppDbContext context)
+        private readonly IReusableServices _reusableServices;
+        public SalesController(AppDbContext context, IReusableServices reusableServices, EmailTriggerService emailTriggerService)
         {
             _context = context;
+            _reusableServices = reusableServices;
+            _emailTriggerService = emailTriggerService;
         }
 
         [HttpGet("ThreeMonthConfirmedOrders/{startdate}/{enddate}")]
@@ -87,7 +93,8 @@ namespace SeemsAPIService.API.Controllers
         }
 
         [HttpGet("Customers")]
-        public async Task<IActionResult> GetCustomers()
+        // public async Task<IActionResult> GetCustomers()
+        public async Task<IActionResult> Customers()
         {
             try
             {
@@ -194,6 +201,16 @@ namespace SeemsAPIService.API.Controllers
             }
         }
 
+        [HttpGet("GetCustomerAbbreviation")]
+        public async Task<string> GetCustomerAbbreviation(long pItemNo)
+        {
+            var customerAbbrev = await _context.customer
+                .Where(c => c.itemno == pItemNo)
+                .Select(c => c.Customer_abb)
+                .FirstOrDefaultAsync();
+
+            return customerAbbrev ?? "";
+        }
         private string GenerateEnquiryNumber()
         {
             var currentYear = DateTime.Now.Month <= 3
@@ -317,30 +334,87 @@ namespace SeemsAPIService.API.Controllers
                 };
 
                 _context.se_enquiry.Add(newEnquiry);
-                await _context.SaveChangesAsync();
+                var result = await _context.SaveChangesAsync();
 
-                //var subject = $"New Enquiry Created - {newEnquiry.enquiryno}";
-                //var body = $@"
-                //            Hello,
-                //            A new enquiry has been created.
+                if (result > 0)   //  Successful adding
+                {
+                    ///  Email Trigger code portion
+                    var toUsers = !string.IsNullOrEmpty(enquiry.ToMailList)
+                                ? JsonConvert.DeserializeObject<List<string>>(enquiry.ToMailList)
+                                : new List<string>();
 
-                //            Enquiry No: {newEnquiry.enquiryno}
-                //            Customer: {enquiry.customer_id}
-                //            Location: {enquiry.location_id}
-                //            Contact: {enquiry.contact_id}
+                    var ccUsers = !string.IsNullOrEmpty(enquiry.CCMailList)
+                                    ? JsonConvert.DeserializeObject<List<string>>(enquiry.CCMailList)
+                                    : new List<string>();
 
-                //            Created By: {enquiry.createdBy}
-                //            Created On: {DateTime.Now:dd-MMM-yyyy hh:mm tt}
+                    // 🔥 Get TO & CC recipients from SalesEnq_Email_Recipients table
+                    var recipients = (
+                        from r in _context.Email_Recipients
+                        join l in _context.Login
+                            on r.LoginId equals l.LoginID
+                        select new
+                        {
+                            r.EnqCreated_PositionInEmail,
+                            l.EmailID
+                        }
+                    ).ToList();
 
-                //            Thank you.
-                //            ";
-                //var domainlist = $@" 
+                    // Merge DB TO recipients into toUsers list
+                    var dbToRecipients = recipients?
+                        .Where(r => r.EnqCreated_PositionInEmail == "TO")
+                        .Select(r => r.EmailID)
+                        .ToList() ?? new List<string>();
+                    toUsers.AddRange(dbToRecipients);
 
-                //";
+                    // Merge DB CC recipients into ccUsers list
+                    var dbCcRecipients = recipients?
+                        .Where(r => r.EnqCreated_PositionInEmail == "CC")
+                        .Select(r => r.EmailID)
+                        .ToList() ?? new List<string>();
+                    ccUsers.AddRange(dbCcRecipients);
 
-                ////send email
-                //await _emailTriggerService.SendEmailAsync("avinash_c@siennaecad.com", subject, body, domainlist);
+                    // Remove duplicates
+                    toUsers = toUsers.Distinct().ToList();
+                    ccUsers = ccUsers.Distinct().ToList();
 
+                    var customerAbbrev = GetCustomerAbbreviation(newEnquiry.customer_id);
+                    var completeRespName = _reusableServices.GetUserName(newEnquiry.completeresponsibilityid);
+                    var salesRespName = _reusableServices.GetUserName(newEnquiry.salesresponsibilityid);
+                    var customername = CustomerById(newEnquiry.customer_id);
+
+                    var subject = $"{newEnquiry.enquiryno} - {customerAbbrev.Result} : New {newEnquiry.enquirytype} Enquiry Added into SEEMS";
+
+                    var body = $@"
+                        Hello Team,
+                        <br/>
+                        <br/>
+                        {enquiry.createdBy} has requested a new enquiry with the following details:
+
+                        <table border='1' cellspacing='0' cellpadding='6' style='font-family: Arial; font-size: 14px;'>
+                        <tr><td><b>Enquiry No</b></td><td>{newEnquiry.enquiryno}</td></tr>
+                        <tr><td><b>Customer</b></td><td>{customername}</td></tr>
+                        <tr><td><b>Job Name</b></td><td>{newEnquiry.jobnames}</td></tr>
+                        <tr><td><b>Complete Responsibility</b></td><td>{completeRespName}</td></tr> 
+                        <tr><td><b>Sales Responsibility</b></td><td>{salesRespName}</td></tr>
+                        <tr><td><b>Reference By</b></td><td>{newEnquiry.ReferenceBy}</td></tr>
+                        <tr><td><b>Quotation Request Last Date</b></td><td>{newEnquiry.quotation_request_lastdate:dd-MMM-yyyy}</td></tr>
+                        <tr><td><b>Remarks</b></td><td>{newEnquiry.Remarks}</td></tr>
+                        </table>
+
+                        <p>Thank you,<br/><br/>
+
+                        Regards,<br/>
+                        SEEMS</p>
+                        ";
+
+                    // 🚀 Send email with final merged To + CC list
+                    await _emailTriggerService.SendEmailAsync(
+                        toEmail: string.Join(";", toUsers),
+                        subject: subject,
+                        body: body,
+                        ccEmail: string.Join(";", ccUsers)
+                    );
+                }
                 return Ok(new { message = "Enquiry saved successfully", filePath = savedFilePath });
             }
             catch (Exception ex)
@@ -350,7 +424,7 @@ namespace SeemsAPIService.API.Controllers
         }
 
         [HttpPut("EditEnquiryData")]
-        public async Task<IActionResult> EditEnquiry([FromForm] EnquiryDto enquiry, IFormFile? file)
+        public async Task<IActionResult> EditEnquiryData([FromForm] EnquiryDto enquiry, IFormFile? file)
         {
             try
             {
@@ -435,8 +509,8 @@ namespace SeemsAPIService.API.Controllers
                     existing.uploadedfilename = Path.Combine("UploadedFiles", uniqueFileName);
                 }
 
-                existing.createdOn = DateTime.Now; 
-                existing.createdBy =  enquiry.createdBy;
+                existing.createdOn = DateTime.Now;
+                existing.createdBy = enquiry.createdBy;
 
                 await _context.SaveChangesAsync();
 
@@ -465,7 +539,7 @@ namespace SeemsAPIService.API.Controllers
             {
                 var enquiry = await _context.se_enquiry
                     .Where(e => e.enquiryno == enquiryno)
-                    .ToListAsync();  
+                    .ToListAsync();
 
                 if (enquiry == null)
                     return NotFound("No enquiry data found for the selected enquiry.");
@@ -503,7 +577,7 @@ namespace SeemsAPIService.API.Controllers
         {
             try
             {
-                var states = await _context.states_ind.OrderBy(s => s.State).Select(s => new {s.State }).ToListAsync();
+                var states = await _context.states_ind.OrderBy(s => s.State).Select(s => new { s.State }).ToListAsync();
 
                 if (states == null || !states.Any())
                     return NotFound("No customers found.");
@@ -534,5 +608,19 @@ namespace SeemsAPIService.API.Controllers
                     new { message = "An error occurred while fetching poenquiries.", error = ex.Message });
             }
         }
+        [HttpGet("CustomerById")]
+        public async Task<IActionResult> CustomerById(long itemno)
+        {
+            var customerName = await _context.customer
+                .Where(c => c.itemno == itemno)
+                .Select(c => new { c.itemno, c.Customer })
+                .FirstOrDefaultAsync();
+
+            if (customerName == null)
+                return NotFound("customerName not found.");
+
+            return Ok(customerName);
+        }
+
     }
 }

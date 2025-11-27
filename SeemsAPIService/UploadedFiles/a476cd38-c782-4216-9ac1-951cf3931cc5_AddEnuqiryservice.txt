@@ -1,0 +1,284 @@
+namespace SeemsAPIService.Application.DTOs
+{
+    public class EnquiryDto
+    {
+        public string enquiryno { get; set; }
+        public Int64 customer_id { get; set; }
+        public Int64 location_id { get; set; }
+        public Int64 contact_id { get; set; }
+        public Int64 currency_id { get; set; }
+        public string inputreceivedthru { get; set; }
+        public string design { get; set; }
+        public string library { get; set; }
+        public string qacam { get; set; }
+        public string dfm { get; set; }
+        public string layout_fab { get; set; }
+        public string layout_testing { get; set; }
+        public string layout_others { get; set; }
+        public string layoutbyid { get; set; }
+        public string si { get; set; }
+        public string pi { get; set; }
+        public string emi_net_level { get; set; }
+        public string emi_system_level { get; set; }
+        public string thermal_board_level { get; set; }
+        public string thermal_system_level { get; set; }
+        public string analysis_others { get; set; }
+        public string analysisbyid { get; set; }
+        public string npi_fab { get; set; }
+        public string asmb { get; set; }
+        public string npi_testing { get; set; }
+        public string npi_others { get; set; }
+        public string hardware { get; set; }
+        public string software { get; set; }
+        public string fpg { get; set; }
+        public string npibyid { get; set; }
+        public string quotation_request_lastdate { get; set; }
+        public string govt_tender { get; set; }
+        public string completeresponsibilityid { get; set; }
+        public string salesresponsibilityid { get; set; }
+        public string status { get; set; }
+        public string Remarks { get; set; }
+        public string uploadedfilename { get; set; }
+        public string createdBy { get; set; }
+        public string createdOn { get; set; }
+        public string layout { get; set; }
+        public string tool { get; set; }
+        public string enquirytype { get; set; }
+        public string jobnames { get; set; }
+         public string appendreq { get; set; }
+        public string type { get; set; }
+        public string statename { get; set; }
+        public string dfa { get; set; }
+        public string VA_Assembly { get; set; }
+        public string DesignOutSource { get; set; }
+        public string NPINew_BOMProc { get; set; }
+        public string NPINew_Fab { get; set; }
+        public string NPINew_Assbly { get; set; }
+        public string NPINew_Testing { get; set; }
+        public string NPINewbyid { get; set; }
+        public string npinew_jobwork { get; set; }
+
+        public string ReferenceBy { get; set; }
+    }
+}
+
+
+
+
+using Microsoft.AspNetCore.Http.HttpResults;
+using SeemsAPIService.Application.DTOs;
+using System.ComponentModel.DataAnnotations;
+using System.Drawing;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
+
+namespace SeemsAPIService.Domain.Entities
+{
+    public class se_enquiry
+    {
+        [Key]
+        public string enquiryno { get; set; }
+        public Int64 customer_id { get; set; }
+        public Int64 location_id { get; set; }
+        public Int64 contact_id { get; set; }
+        public Int64 currency_id { get; set; }
+        public string inputreceivedthru { get; set; }
+        public string design { get; set; } = "NO";
+        public string library { get; set; } = "NO";
+        public string qacam { get; set; } = "NO";
+        public string dfm { get; set; } = "NO";
+        public string layout_fab { get; set; } = "NO";
+        public string layout_testing { get; set; } = "NO";
+        public string layout_others { get; set; } = "NO";
+        public string layoutbyid { get; set; }  
+        public string si { get; set; } = "NO";
+        public string pi { get; set; } = "NO";
+        public string emi_net_level { get; set; }
+        public string emi_system_level { get; set; } = "NO";
+        public string thermal_board_level { get; set; } = "NO";
+        public string thermal_system_level { get; set; } = "NO";
+        public string analysis_others { get; set; } = "NO";
+        public string analysisbyid { get; set; }
+        public string npi_fab { get; set; } = "NO";
+        public string asmb { get; set; } = "NO";
+        public string npi_testing { get; set; } = "NO";
+        public string npi_others { get; set; } = "NO";
+        public string hardware { get; set; } = "NO";
+        public string software { get; set; } = "NO";
+        public string fpg { get; set; } = "NO";
+
+        public string npibyid { get; set; }
+        public string quotation_request_lastdate { get; set; } 
+        public string govt_tender { get; set; } = "NO";
+        public string completeresponsibilityid { get; set; }
+        public string salesresponsibilityid { get; set; }
+        public string status { get; set; }
+        public string Remarks { get; set; }
+        public string uploadedfilename { get; set; }
+        public string createdBy { get; set; }
+        public string createdOn { get; set; }
+        //public string layout { get; set; } = "NO";
+        public string enquirytype { get; set; }
+        public string tool { get; set; }
+        public string jobnames { get; set; }
+        public string appendreq { get; set; }
+        public string type { get; set; }
+        public string statename { get; set; }
+        public string dfa { get; set; }
+        public string VA_Assembly { get; set; } = "NO";
+        public string DesignOutSource { get; set; } = "NO";
+        public string NPINew_BOMProc { get; set; } = "NO";
+        public string NPINew_Fab { get; set; } = "NO";
+        public string NPINew_Assbly { get; set; } = "NO";
+        public string NPINew_Testing { get; set; } = "NO";
+        public string NPINewbyid { get; set; }
+        public string npinew_jobwork { get; set; } = "NO";
+        public string ReferenceBy { get; set; }
+    }
+}
+
+
+
+
+        private string GenerateEnquiryNumber()
+        {
+            var currentYear = DateTime.Now.Month <= 3
+                ? DateTime.Now.AddYears(-1).ToString("yy")
+                : DateTime.Now.ToString("yy");
+
+            var latest = _context.se_enquiry
+                         .OrderByDescending(x => x.enquiryno)
+                         .Select(x => x.enquiryno)
+                         .FirstOrDefault();
+
+            if (string.IsNullOrEmpty(latest) || !latest.Contains("ENQ" + currentYear))
+                return $"ENQ{currentYear}0001";
+
+            var lastNumber = int.Parse(latest.Replace("ENQ", ""));
+            return $"ENQ{lastNumber + 1}";
+        }
+
+        [HttpPost("AddEnquiryData")]
+        public async Task<IActionResult> AddEnquiryData([FromForm] EnquiryDto enquiry, IFormFile? file)
+        {
+            try
+            {
+                // Validate required fields
+                if (enquiry.customer_id == 0 ||
+                    enquiry.contact_id == 0 ||
+                    string.IsNullOrWhiteSpace(enquiry.type) ||
+                    enquiry.currency_id == 0 ||
+                    string.IsNullOrWhiteSpace(enquiry.inputreceivedthru) ||
+                    string.IsNullOrWhiteSpace(enquiry.salesresponsibilityid) ||
+                    string.IsNullOrWhiteSpace(enquiry.completeresponsibilityid) ||
+                    string.IsNullOrWhiteSpace(enquiry.govt_tender) ||
+                    string.IsNullOrWhiteSpace(enquiry.quotation_request_lastdate) ||
+                    string.IsNullOrWhiteSpace(enquiry.createdBy))
+                {
+                    return BadRequest(new { message = "Missing required fields" });
+                }
+
+                string? savedFilePath = null;
+
+                // 🔹 File upload (optional)
+                if (file != null && file.Length > 0)
+                {
+                    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "UploadedFiles");
+                    if (!Directory.Exists(uploadsFolder))
+                        Directory.CreateDirectory(uploadsFolder);
+
+                    var uniqueFileName = $"{Guid.NewGuid()}_{file.FileName}";
+                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                    using var stream = new FileStream(filePath, FileMode.Create);
+                    await file.CopyToAsync(stream);
+
+                    savedFilePath = Path.Combine("UploadedFiles", uniqueFileName);
+                }
+
+                // 🔹 Create enquiry object
+                var newEnquiry = new se_enquiry
+                {
+                    enquiryno = GenerateEnquiryNumber(),
+                    customer_id = enquiry.customer_id,
+                    contact_id = enquiry.contact_id,
+                    type = enquiry.type,
+                    statename = enquiry.statename,
+                    currency_id = enquiry.currency_id,
+                    inputreceivedthru = enquiry.inputreceivedthru,
+                    salesresponsibilityid = enquiry.salesresponsibilityid,
+                    completeresponsibilityid = enquiry.completeresponsibilityid,
+                    quotation_request_lastdate = enquiry.quotation_request_lastdate,
+                    createdBy = enquiry.createdBy,
+                    createdOn = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                    location_id = enquiry.location_id,
+
+                    // 🔹 Optional enum/string fields
+                    //layout
+                    design = DefaultNo(enquiry.design),
+                    library = DefaultNo(enquiry.library),
+                    qacam = DefaultNo(enquiry.qacam),
+                    dfm = enquiry.dfm ?? "",
+                    layout_fab = DefaultNo(enquiry.layout_fab),
+                    layout_testing = DefaultNo(enquiry.layout_testing),
+                    layout_others = enquiry.layout_others ?? "",
+                    layoutbyid = enquiry.layoutbyid ?? "",
+                    dfa = DefaultNo(enquiry.dfa),
+
+                    si = DefaultNo(enquiry.si),
+                    pi = DefaultNo(enquiry.pi),
+                    emi_net_level = DefaultNo(enquiry.emi_net_level),
+                    emi_system_level = DefaultNo(enquiry.emi_system_level),
+                    thermal_board_level = DefaultNo(enquiry.thermal_board_level),
+                    thermal_system_level = DefaultNo(enquiry.thermal_system_level),
+                    analysis_others = enquiry.analysis_others ?? "",
+                    analysisbyid = enquiry.analysisbyid ?? "",
+
+                    npi_fab = DefaultNo(enquiry.npi_fab),
+                    asmb = DefaultNo(enquiry.asmb),
+                    npi_testing = DefaultNo(enquiry.npi_testing),
+                    npi_others = DefaultNo(enquiry.npi_others),
+                    hardware = DefaultNo(enquiry.hardware),
+                    software = DefaultNo(enquiry.software),
+                    fpg = DefaultNo(enquiry.fpg),
+                    VA_Assembly = DefaultNo(enquiry.VA_Assembly),
+                    DesignOutSource = DefaultNo(enquiry.DesignOutSource),
+                    npibyid = enquiry.npibyid ?? "",
+
+                    NPINew_BOMProc = DefaultNo(enquiry.NPINew_BOMProc),
+                    NPINew_Fab = DefaultNo(enquiry.NPINew_Fab),
+                    NPINew_Assbly = DefaultNo(enquiry.NPINew_Assbly),
+                    NPINew_Testing = DefaultNo(enquiry.NPINew_Testing),
+                    NPINewbyid = enquiry.NPINewbyid ?? "",
+                    npinew_jobwork = DefaultNo(enquiry.npinew_jobwork),
+
+                    Remarks = enquiry.Remarks ?? "",
+                    status = "Open",
+                    uploadedfilename = savedFilePath ?? "",
+                    enquirytype = enquiry.enquirytype ?? "",
+                    tool = enquiry.tool ?? "",
+                    govt_tender = DefaultNo(enquiry.govt_tender),
+                    jobnames = enquiry.jobnames ?? "",
+                    appendreq = enquiry.appendreq ?? "",
+                    ReferenceBy = enquiry.ReferenceBy ?? ""
+                };
+
+                _context.se_enquiry.Add(newEnquiry);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Enquiry saved successfully", filePath = savedFilePath });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error saving enquiry", details = ex.Message });
+            }
+        }
+
+        // Helper method
+        private string DefaultNo(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return "NO";
+
+            return value.ToUpper() == "YES" ? "YES" : "NO";
+        }

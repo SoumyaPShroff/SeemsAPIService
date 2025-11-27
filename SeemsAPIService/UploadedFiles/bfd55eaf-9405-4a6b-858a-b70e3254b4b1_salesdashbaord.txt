@@ -1,0 +1,177 @@
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import "../Styles/SalesDashboard.css";
+
+const SalesDashboard = () => {
+  const [loading, setLoading] = useState(true);
+  const [threeMonthData, setThreeMonthData] = useState([]);
+  const [tentativeData, setTentativeData] = useState([]);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [threeMonthRes, tentativeRes] = await Promise.all([
+          axios.get(`${baseUrl}/GetThreeMonthConfirmedOrders?startdate=${startdate}&enddate=${enddate}`),						
+          axios.get(`${baseUrl}/TentativeQuotedOpenConfirmedOrders`),				
+
+        ]);
+        setThreeMonthData(threeMonthRes.data);
+        setTentativeData(tentativeRes.data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const formatINR = (value) =>
+    value
+      ? `₹ ${(value / 100000).toLocaleString("en-IN", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })} L`
+      : "₹ 0.00";
+
+  if (loading) return <div className="loading">Loading...</div>;
+  if (error) return <div className="error">{error}</div>;
+
+ return (
+  <div className="dashboard-container">
+    <div className="dashboard-top-card">
+      <h2 className="card-title">Confirmed Orders (Last 3 Months)</h2>
+      <table className="confirmed-table">
+        <thead>
+          <tr>
+            <th>Confirmed Orders</th>
+            {threeMonthData.months?.map((m, i) => (
+              <th key={i}>{m}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {threeMonthData.rows?.map((row, i) => (
+            <tr key={i} className={row.isTotal ? "highlight-row" : ""}>
+              <td className={row.isBold ? "bold-text" : ""}>{row.name}</td>
+              {row.values.map((val, j) => (
+                <td key={j}>{formatINR(val)}</td>
+              ))}
+            </tr>
+          ))}
+          <tr className="grand-total">
+            <td>Total Orders (3 months)</td>
+            <td colSpan={threeMonthData.months?.length || 1}>
+              {formatINR(threeMonthData.grandTotal)}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div className="dashboard-grid">
+      {/* Open Orders */}
+      <div className="dashboard-card">
+        <h2 className="card-title">Open Orders</h2>
+        {threeMonthData.open?.map((m, i) => (
+          <div key={i} className="data-row">
+            <span>{m.name}</span>
+            <span>{formatINR(m.total)}</span>
+          </div>
+        ))}
+        <div className="total-row">
+          <span>Total</span>
+          <span>{formatINR(threeMonthData.openTotal)}</span>
+        </div>
+      </div>
+
+      {/* Tentative & Quoted Orders */}
+      <div className="dashboard-card">
+        <h2 className="card-title">Tentative & Quoted Orders</h2>
+        <div className="data-row">
+          <span>Tentative Orders</span>
+          <span>{formatINR(tentativeData.tentativeTotal)}</span>
+        </div>
+        <div className="data-row">
+          <span>VA Orders</span>
+          <span>{formatINR(tentativeData.vaTotal)}</span>
+        </div>
+        <div className="data-row">
+          <span>NPI Orders</span>
+          <span>{formatINR(tentativeData.npiTotal)}</span>
+        </div>
+        <div className="total-row">
+          <span>Grand Total</span>
+          <span>{formatINR(tentativeData.grandTotal)}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+};
+
+export default SalesDashboard;
+
+
+/* --- TABLE STYLING FOR CONFIRMED ORDERS --- */
+.dashboard-top-card {
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  padding: 25px 20px;
+  width: 100%;
+  max-width: 1100px;
+  margin-bottom: 30px;
+  border: 2px solid #d32f2f; /* Red border like your image */
+}
+
+.confirmed-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.confirmed-table th {
+  background-color: #f5f5f5;
+  color: #0d47a1;
+  font-weight: 600;
+  padding: 10px;
+  border-bottom: 2px solid #ccc;
+  text-align: left;
+}
+
+.confirmed-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.bold-text {
+  font-weight: 600;
+}
+
+.highlight-row {
+  background-color: #f2f2f2;
+}
+
+.grand-total {
+  font-weight: 700;
+  color: #1565c0;
+}
+
+.grand-total td {
+  border-top: 2px solid #e3f2fd;
+  padding-top: 10px;
+}
+
+/* --- BELOW CARDS GRID --- */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 25px;
+  width: 100%;
+  max-width: 1100px;
+}

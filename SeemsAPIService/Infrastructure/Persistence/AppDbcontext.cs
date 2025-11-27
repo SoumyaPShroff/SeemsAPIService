@@ -43,6 +43,7 @@ namespace SeemsAPIService.Infrastructure.Persistence
         public DbSet<states_ind> states_ind { get; set; }
         public DbSet<poenquiries> poenquiries { get; set; }
 
+        public DbSet<Email_Recipients> Email_Recipients { get; set; }   
 
         public async Task<object> GetTentativeQuotedOrders()
         {

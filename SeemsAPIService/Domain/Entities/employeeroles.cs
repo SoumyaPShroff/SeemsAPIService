@@ -10,6 +10,7 @@ namespace SeemsAPIService.Domain.Entities
         public Int32  billingplanner { get; set; }
         public Int32 viewallenquiries { get; set; }
         public Int32 salesmgmtdashboard { get; set; }
-
+        public Int32 ViewEnquiryReport { get; set; }
+        public Int32 ViewPOEnqData { get; set; }
     }
 }

@@ -58,5 +58,7 @@
         public string? NPINewbyid { get; set; }
         public string? npinew_jobwork { get; set; }
         public string? ReferenceBy { get; set; }
+        public required string ToMailList { get; set; }
+        public string? CCMailList { get; set; }
     }
 }
