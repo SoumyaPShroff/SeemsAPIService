@@ -15,10 +15,12 @@ namespace SeemsAPIService.API.Controllers
     {
         private readonly AppDbContext _context;
         private readonly EmailTriggerService _emailService;
-        public HomeController(AppDbContext context, EmailTriggerService emailService)
+        private readonly IReusableServices _reusableServices;
+        public HomeController(AppDbContext context, EmailTriggerService emailService, IReusableServices reusableServices    )
         {
             _context = context;
             _emailService = emailService;
+            _reusableServices = reusableServices;
         }
 
         [HttpGet("VerifyLoginUser/{ploginid}/{ppassword}")]
@@ -117,26 +119,12 @@ namespace SeemsAPIService.API.Controllers
                 return StatusCode(500, new { message = $"Failed to send email: {ex.Message}" });
             }
         }
-
-
-        //[HttpGet("UserName/{pLoginId}")]
-        //public IActionResult getUserName(string pLoginId)
-
-        //{
-        //    try
-        //    {
-        //        var userName = _context.general_employee.Where(l => l.IDno == pLoginId).Select(l => l.Name).FirstOrDefault();
-
-        //        if (userName == null)
-        //            return NotFound($"No user found with LoginID '{pLoginId}'");
-
-        //        return Ok(userName);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        throw ex;
-        //    }
-        //}
+        [HttpGet("UserName/{loginId}")]
+        public IActionResult UserName(string loginId)
+        {
+            var name = _reusableServices.GetUserName(loginId);
+            return Ok(name ?? "");
+        }
 
         [HttpGet("EmailId/{loginIds}")]
         public IActionResult GetEmailIDs(string loginIds)
@@ -252,7 +240,7 @@ namespace SeemsAPIService.API.Controllers
         {
             try
             {
-                var userjobtitle = _context.general_employee.Where(g => g.IDno == pLoginId).Select(l => l.JobTitle).FirstOrDefault();
+                var userjobtitle = _context.general_employee.Where(g => g.IDno == pLoginId && g.EmpStatus == "Active").Select(l => l.JobTitle).FirstOrDefault();
 
                 if (userjobtitle == null)
                     return NotFound($"No designation found with loginid '{pLoginId}'");
@@ -451,6 +439,30 @@ namespace SeemsAPIService.API.Controllers
                 .ToListAsync();
 
             return result;
+        }
+        [HttpGet("SideBarAccessMenus/{designationId}")]
+        public async Task<List<SidebarAccessMenus>> SideBarAccessMenus(int designationId)
+
+        {
+            {
+                List<SidebarAccessMenus> list;
+                string sql = $"CALL sp_GetSidebarAccess('{designationId}')";
+                list = await _context.SidebarAccessMenus.FromSqlRaw<SidebarAccessMenus>(sql).ToListAsync();
+                return list;
+
+            }
+        }
+        [HttpGet("RoleDesignID/{designationName}")]
+        public async Task<long> RoleDesignID(string designationName)
+
+        {
+            {
+              var designID =  await _context.roledesignations.Where(r => r.designation == designationName)
+                              .Select(r => r.designationid)
+                              .FirstOrDefaultAsync();
+                return designID;
+
+            }
         }
     }
 }

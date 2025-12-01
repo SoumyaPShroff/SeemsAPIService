@@ -597,7 +597,7 @@ namespace SeemsAPIService.API.Controllers
         {
             try
             {
-                var poenqs = await _context.poenquiries.ToListAsync();
+                var poenqs = await _context.poenquiries.Where(p => p.pbalanceamt != "0").ToListAsync();    
 
                 if (poenqs == null || !poenqs.Any())
                     return NotFound("No poenquiries found.");
