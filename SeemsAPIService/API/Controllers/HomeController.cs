@@ -464,5 +464,35 @@ namespace SeemsAPIService.API.Controllers
 
             }
         }
+        [HttpGet("StageTools")]
+        public async Task<IActionResult> StageTools()
+        {
+            {
+                var stageTools = await _context.se_stages_tools.Where (s=> s.condition_tool == 1).OrderBy(s => s.Tools).ToListAsync();
+                if (stageTools == null || !stageTools.Any())
+                    return NotFound("No stage tools found.");
+
+                return Ok(stageTools);
+
+            }
+        }
+        [HttpGet("HOPCTasks")]
+        public async Task<IActionResult> HOPCTasks()
+        {
+            {
+                var hopcTasks = await _context.setting_employee.Where(s => s.condition_task == 1 && s.tasktype != null)
+                    .Select(s => new
+                    {
+                        s.itemnumber,
+                        s.tasktype
+                    })
+                    .OrderBy(s => s.tasktype).ToListAsync();
+                if (hopcTasks == null || !hopcTasks.Any())
+                    return NotFound("No hopcTasks found.");
+
+                return Ok(hopcTasks);
+
+            }
+        }
     }
 }

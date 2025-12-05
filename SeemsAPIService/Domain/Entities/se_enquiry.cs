@@ -32,7 +32,6 @@ namespace SeemsAPIService.Domain.Entities
         public string? asmb { get; set; } = "NO";
         public string? npi_testing { get; set; } = "NO";
         public string? npi_others { get; set; } = "NO";
-
         public string? hardware { get; set; } = "NO";
         public string? software { get; set; } = "NO";
         public string? fpg { get; set; } = "NO";
@@ -46,7 +45,6 @@ namespace SeemsAPIService.Domain.Entities
         public string? uploadedfilename { get; set; }
         public string createdBy { get; set; }
         public DateTime createdOn { get; set; }
-
         public string enquirytype { get; set; }
         public string tm { get; set; }
         public string tool { get; set; }
@@ -64,5 +62,20 @@ namespace SeemsAPIService.Domain.Entities
         public string? NPINewbyid { get; set; }
         public string? npinew_jobwork { get; set; } = "NO";
         public string? ReferenceBy { get; set; }
+
+        // onsite extra fields
+        public string?  toolLicense { get; set; }
+        public long toolId { get; set; }
+        public long taskId { get; set; }
+        public long expFrom { get; set; }
+        public long expTo { get; set; }
+        public long noOfResources { get; set; }
+        public DateTime? tentStartDate { get; set; }
+        public long logistics { get; set; }
+        public long onsiteDurationType { get; set; }
+        public long hourlyRateType { get; set; }
+        public string hourlyReate  { get; set; }
+        public DateTime? profReqLastDate { get; set; }
+ 
     }
 }

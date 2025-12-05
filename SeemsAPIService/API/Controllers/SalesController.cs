@@ -12,6 +12,7 @@ using System.Data;
 using System.Numerics;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 
 namespace SeemsAPIService.API.Controllers
 {
@@ -331,6 +332,19 @@ namespace SeemsAPIService.API.Controllers
                     appendreq = enquiry.appendreq ?? "",
                     ReferenceBy = enquiry.ReferenceBy ?? "",
                     tm = enquiry.tm,
+
+                    toolLicense   = enquiry.toolLicense,          //onsite fields
+                    toolId = enquiry.toolId,
+                    taskId = enquiry.taskId,
+                    expFrom = enquiry.expFrom,
+                    expTo = enquiry.expTo,
+                    noOfResources = enquiry.noOfResources,
+                    tentStartDate = enquiry.tentStartDate,
+                    logistics = enquiry.logistics,
+                    onsiteDurationType = enquiry.onsiteDurationType,
+                    hourlyRateType = enquiry.hourlyRateType,
+                    hourlyReate = enquiry.hourlyReate,
+                    profReqLastDate = enquiry.profReqLastDate,
                 };
 
                 _context.se_enquiry.Add(newEnquiry);
@@ -492,6 +506,19 @@ namespace SeemsAPIService.API.Controllers
                 existing.appendreq = enquiry.appendreq ?? "";
                 existing.ReferenceBy = enquiry.ReferenceBy ?? "";
                 existing.tm = enquiry.tm;
+
+                existing.toolLicense = enquiry.toolLicense;        //onsite fields
+                existing.toolId = enquiry.toolId;
+                existing.taskId = enquiry.taskId;
+                existing.expFrom = enquiry.expFrom;
+                existing.expTo = enquiry.expTo;
+                existing.noOfResources = enquiry.noOfResources;
+                existing.tentStartDate = enquiry.tentStartDate;
+                existing.logistics = enquiry.logistics;
+                existing.onsiteDurationType = enquiry.onsiteDurationType;
+                existing.hourlyRateType = enquiry.hourlyRateType;
+                existing.hourlyReate = enquiry.hourlyReate;
+                existing.profReqLastDate = enquiry.profReqLastDate;
 
                 // 🔹 File upload on Edit (optional)
                 if (file != null && file.Length > 0)

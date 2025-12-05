@@ -45,7 +45,7 @@ namespace SeemsAPIService.Infrastructure.Persistence
         public DbSet<Email_Recipients> Email_Recipients { get; set; }   
         public DbSet<SidebarAccessMenus> SidebarAccessMenus { get; set; }
         public DbSet<roledesignations> roledesignations { get; set; }
-
+        public DbSet<se_stages_tools> se_stages_tools { get; set; }
         public async Task<object> GetTentativeQuotedOrders()
         {
             using var connection = Database.GetDbConnection();

@@ -60,5 +60,19 @@
         public string? ReferenceBy { get; set; }
         public required string ToMailList { get; set; }
         public string? CCMailList { get; set; }
+
+        // onsite extra fields
+        public string? toolLicense { get; set; }
+        public long toolId { get; set; }
+        public long taskId { get; set; }
+        public long expFrom { get; set; }
+        public long expTo { get; set; }
+        public long noOfResources { get; set; }
+        public DateTime? tentStartDate { get; set; }
+        public long logistics { get; set; }
+        public long onsiteDurationType { get; set; }
+        public long hourlyRateType { get; set; }
+        public string hourlyReate { get; set; }
+        public DateTime? profReqLastDate { get; set; }
     }
 }
