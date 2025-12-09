@@ -9,6 +9,7 @@ using SeemsAPIService.Domain.Entities;
 using SeemsAPIService.Infrastructure.Persistence;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics.Eventing.Reader;
 using System.Numerics;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography;
@@ -239,10 +240,10 @@ namespace SeemsAPIService.API.Controllers
                 if (enquiry.customer_id == 0 ||
                     enquiry.contact_id == 0 ||
                     string.IsNullOrWhiteSpace(enquiry.type) ||
-                    string.IsNullOrWhiteSpace(enquiry.inputreceivedthru) ||
+                    // string.IsNullOrWhiteSpace(enquiry.inputreceivedthru) ||
                     string.IsNullOrWhiteSpace(enquiry.salesresponsibilityid) ||
                     string.IsNullOrWhiteSpace(enquiry.completeresponsibilityid) ||
-                    string.IsNullOrWhiteSpace(enquiry.govt_tender) ||
+                    //  string.IsNullOrWhiteSpace(enquiry.govt_tender) ||
                     string.IsNullOrWhiteSpace(enquiry.createdBy))
                 {
                     return BadRequest(new { message = "Missing required fields" });
@@ -333,7 +334,7 @@ namespace SeemsAPIService.API.Controllers
                     ReferenceBy = enquiry.ReferenceBy ?? "",
                     tm = enquiry.tm,
 
-                    toolLicense   = enquiry.toolLicense,          //onsite fields
+                    toolLicense = enquiry.toolLicense,          //onsite fields
                     toolId = enquiry.toolId,
                     taskId = enquiry.taskId,
                     expFrom = enquiry.expFrom,
@@ -345,6 +346,7 @@ namespace SeemsAPIService.API.Controllers
                     hourlyRateType = enquiry.hourlyRateType,
                     hourlyReate = enquiry.hourlyReate,
                     profReqLastDate = enquiry.profReqLastDate,
+                    onsiteDuration = enquiry.onsiteDuration,
                 };
 
                 _context.se_enquiry.Add(newEnquiry);
@@ -352,6 +354,7 @@ namespace SeemsAPIService.API.Controllers
 
                 if (result > 0)   //  Successful adding
                 {
+
                     ///  Email Trigger code portion
                     var toUsers = !string.IsNullOrEmpty(enquiry.ToMailList)
                                 ? JsonConvert.DeserializeObject<List<string>>(enquiry.ToMailList)
@@ -394,34 +397,82 @@ namespace SeemsAPIService.API.Controllers
                     var customerAbbrev = GetCustomerAbbreviation(newEnquiry.customer_id);
                     var completeRespName = _reusableServices.GetUserName(newEnquiry.completeresponsibilityid);
                     var salesRespName = _reusableServices.GetUserName(newEnquiry.salesresponsibilityid);
-                    var customername = CustomerById(newEnquiry.customer_id);
+                    //  var customername = CustomerById(newEnquiry.customer_id);
+                    var customerResult = await CustomerById(newEnquiry.customer_id) as OkObjectResult;
+                    dynamic customer = customerResult.Value;
+                    string customername = customer.Customer;
 
+                    var taskname = _reusableServices.GetHOPCTasks(newEnquiry.taskId);
+                    var toolname = _reusableServices.GetStageTools(newEnquiry.toolId);
+                    var toolLicenseName = "";
+                    if (newEnquiry.toolId == 1) {
+                        toolLicenseName = "With License";
+                    }
+                    {
+                        toolLicenseName = "Without License";
+                    }
+                    string body = "";
                     var subject = $"{newEnquiry.enquiryno} - {customerAbbrev.Result} : New {newEnquiry.enquirytype} Enquiry Added into SEEMS";
 
-                    var body = $@"
-                        Hello Team,
-                        <br/>
-                        <br/>
-                        {enquiry.createdBy} has requested a new enquiry with the following details:
+                    if (enquiry.enquirytype == "OFFSHORE")
+                    {
 
-                        <table border='1' cellspacing='0' cellpadding='6' style='font-family: Arial; font-size: 14px;'>
-                        <tr><td><b>Enquiry No</b></td><td>{newEnquiry.enquiryno}</td></tr>
-                        <tr><td><b>Customer</b></td><td>{customername}</td></tr>
-                        <tr><td><b>Job Name</b></td><td>{newEnquiry.jobnames}</td></tr>
-                        <tr><td><b>Complete Responsibility</b></td><td>{completeRespName}</td></tr> 
-                        <tr><td><b>Sales Responsibility</b></td><td>{salesRespName}</td></tr>
-                        <tr><td><b>Reference By</b></td><td>{newEnquiry.ReferenceBy}</td></tr>
-                        <tr><td><b>Quotation Request Last Date</b></td><td>{newEnquiry.quotation_request_lastdate:dd-MMM-yyyy}</td></tr>
-                        <tr><td><b>Remarks</b></td><td>{newEnquiry.Remarks}</td></tr>
-                        </table>
+                        body = $@"
+                            Hello Team,
+                            <br/>
+                            <br/>
+                            {enquiry.createdBy} has requested a new enquiry with the following details:
+                            <br/>
+                            <table border='1' cellspacing='0' cellpadding='6' style='font-family: Arial; font-size: 14px;'>
+                            <tr><td><b>Enquiry No</b></td><td>{newEnquiry.enquiryno}</td></tr>
+                            <tr><td><b>Customer</b></td><td>{customername}</td></tr>
+                            <tr><td><b>Job Name</b></td><td>{newEnquiry.jobnames}</td></tr>
+                            <tr><td><b>Complete Responsibility</b></td><td>{completeRespName}</td></tr> 
+                            <tr><td><b>Sales Responsibility</b></td><td>{salesRespName}</td></tr>
+                            <tr><td><b>Reference By</b></td><td>{newEnquiry.ReferenceBy}</td></tr>
+                            <tr><td><b>Quotation Request Last Date</b></td><td>{newEnquiry.quotation_request_lastdate:dd-MMM-yyyy}</td></tr>
+                            <tr><td><b>Remarks</b></td><td>{newEnquiry.Remarks}</td></tr>
+                            </table>
 
-                        <p>Thank you,<br/><br/>
+                            <p>Thank you,<br/><br/>
 
-                        Regards,<br/>
-                        SEEMS</p>
-                        ";
+                            Regards,<br/>
+                            SEEMS</p>
+                            ";
+                    }
+                    {
+                        //onsite
+                        body = $@"
+                            Hello Team,
+                            <br/>
+                            <br/>
+                            {enquiry.createdBy} has requested a new enquiry with the following details:
+                            <br/>
+                            <table border='1' cellspacing='0' cellpadding='6' style='font-family: Arial; font-size: 14px;'>
+                            <tr><td><b>Enquiry No</b></td><td>{newEnquiry.enquiryno}</td></tr>
+                            <tr><td><b>Customer</b></td><td>{customername}</td></tr>
+                            <tr><td><b>Task</b></td><td>{taskname.Result[0].tasktype}</td></tr>
+                            <tr><td><b>Complete Responsibility</b></td><td>{completeRespName}</td></tr> 
+                            <tr><td><b>Sales Responsibility</b></td><td>{salesRespName}</td></tr>
+                            <tr><td><b>Reference By</b></td><td>{newEnquiry.ReferenceBy}</td></tr>
+                            <tr><td><b>Profile Request Last Date</b></td><td>{newEnquiry.profReqLastDate:dd-MMM-yyyy}</td></tr>
+                            <tr><td><b>Remarks</b></td><td>{newEnquiry.Remarks}</td></tr>
+                            <tr><td><b>License</b></td><td>{toolLicenseName}</td></tr>
+                            <tr><td><b>Tool</b></td><td>{toolname.Result[0].Tools}</td></tr>
+                            <tr><td><b>Year Exp From</b></td><td>{newEnquiry.expFrom}</td></tr>
+                            <tr><td><b>Year Exp To</b></td><td>{newEnquiry.expTo}</td></tr>
+                            <tr><td><b>No Of Resources</b></td><td>{newEnquiry.noOfResources}</td></tr>
+                            </table>
 
-                    // 🚀 Send email with final merged To + CC list
+                            <p>Thank you,<br/><br/>
+
+                            Regards,<br/>
+                            SEEMS</p>
+                            ";
+
+                    }
+                        // }
+                   // 🚀 Send email with final merged To + CC list
                     await _emailTriggerService.SendEmailAsync(
                         toEmail: string.Join(";", toUsers),
                         subject: subject,
@@ -435,7 +486,8 @@ namespace SeemsAPIService.API.Controllers
             {
                 return StatusCode(500, new { message = "Error saving enquiry", details = ex.Message });
             }
-        }
+}
+ 
 
         [HttpPut("EditEnquiryData")]
         public async Task<IActionResult> EditEnquiryData([FromForm] EnquiryDto enquiry, IFormFile? file)
@@ -624,7 +676,7 @@ namespace SeemsAPIService.API.Controllers
         {
             try
             {
-                var poenqs = await _context.poenquiries.Where(p => p.pbalanceamt != "0").ToListAsync();    
+                var poenqs = await _context.poenquiries.Where(p => p.pbalanceamt != "0").ToListAsync();
 
                 if (poenqs == null || !poenqs.Any())
                     return NotFound("No poenquiries found.");

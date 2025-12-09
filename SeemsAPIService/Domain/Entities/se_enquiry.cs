@@ -6,7 +6,7 @@ namespace SeemsAPIService.Domain.Entities
     public class se_enquiry
     {
         [Key]
-        public string enquiryno { get; set; }
+        public string? enquiryno { get; set; }
         public long customer_id { get; set; }
         public long location_id { get; set; }
         public long contact_id { get; set; }
@@ -36,11 +36,11 @@ namespace SeemsAPIService.Domain.Entities
         public string? software { get; set; } = "NO";
         public string? fpg { get; set; } = "NO";
         public string? npibyid { get; set; }
-        public DateTime  quotation_request_lastdate { get; set; }
-        public string govt_tender { get; set; } = "NO";
+        public DateTime   quotation_request_lastdate { get; set; }
+        public string? govt_tender { get; set; } = "NO";
         public string completeresponsibilityid { get; set; }
         public string salesresponsibilityid { get; set; }
-        public string status { get; set; }
+        public string? status { get; set; }
         public string? Remarks { get; set; }
         public string? uploadedfilename { get; set; }
         public string createdBy { get; set; }
@@ -64,18 +64,21 @@ namespace SeemsAPIService.Domain.Entities
         public string? ReferenceBy { get; set; }
 
         // onsite extra fields
-        public string?  toolLicense { get; set; }
+        public long toolLicense { get; set; }
         public long toolId { get; set; }
         public long taskId { get; set; }
         public long expFrom { get; set; }
         public long expTo { get; set; }
         public long noOfResources { get; set; }
-        public DateTime? tentStartDate { get; set; }
+        public DateTime  tentStartDate { get; set; }
         public long logistics { get; set; }
         public long onsiteDurationType { get; set; }
         public long hourlyRateType { get; set; }
-        public string hourlyReate  { get; set; }
+        public Double hourlyReate  { get; set; }
         public DateTime? profReqLastDate { get; set; }
- 
+
+        public long onsiteDuration { get; set; }
+
+
     }
 }
