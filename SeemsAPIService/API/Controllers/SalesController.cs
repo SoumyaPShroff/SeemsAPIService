@@ -394,11 +394,12 @@ namespace SeemsAPIService.API.Controllers
                     toUsers = toUsers.Distinct().ToList();
                     ccUsers = ccUsers.Distinct().ToList();
 
-                    var customerAbbrev = GetCustomerAbbreviation(newEnquiry.customer_id);
+                    var customerAbbrev = GetCustomerAbbreviation(newEnquiry.customer_id ?? 0);
                     var completeRespName = _reusableServices.GetUserName(newEnquiry.completeresponsibilityid);
                     var salesRespName = _reusableServices.GetUserName(newEnquiry.salesresponsibilityid);
                     //  var customername = CustomerById(newEnquiry.customer_id);
-                    var customerResult = await CustomerById(newEnquiry.customer_id) as OkObjectResult;
+                    // var customerResult = await CustomerById(newEnquiry.customer_id ?? 0)) as OkObjectResult;
+                    var customerResult = await CustomerById(newEnquiry.customer_id ?? 0) as OkObjectResult;
                     dynamic customer = customerResult.Value;
                     string customername = customer.Customer;
 

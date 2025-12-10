@@ -6,10 +6,11 @@ namespace SeemsAPIService.Domain.Entities
     public class se_enquiry
     {
         [Key]
+        //public string enquiryno { get; set; }
         public string? enquiryno { get; set; }
-        public long customer_id { get; set; }
-        public long location_id { get; set; }
-        public long contact_id { get; set; }
+        public long? customer_id { get; set; }
+        public long? location_id { get; set; }
+        public long? contact_id { get; set; }
         public string? currency_id { get; set; }
         public string? inputreceivedthru { get; set; }
         public string? design { get; set; } = "NO";
@@ -28,7 +29,7 @@ namespace SeemsAPIService.Domain.Entities
         public string? thermal_system_level { get; set; } = "NO";
         public string? analysis_others { get; set; } = "NO";
         public string? analysisbyid { get; set; }
-       public string? npi_fab { get; set; } = "NO";
+        public string? npi_fab { get; set; } = "NO";
         public string? asmb { get; set; } = "NO";
         public string? npi_testing { get; set; } = "NO";
         public string? npi_others { get; set; } = "NO";
@@ -64,20 +65,20 @@ namespace SeemsAPIService.Domain.Entities
         public string? ReferenceBy { get; set; }
 
         // onsite extra fields
-        public long toolLicense { get; set; }
-        public long toolId { get; set; }
-        public long taskId { get; set; }
-        public long expFrom { get; set; }
-        public long expTo { get; set; }
-        public long noOfResources { get; set; }
-        public DateTime  tentStartDate { get; set; }
-        public long logistics { get; set; }
-        public long onsiteDurationType { get; set; }
-        public long hourlyRateType { get; set; }
-        public Double hourlyReate  { get; set; }
+        public long? toolLicense { get; set; }
+        public long? toolId { get; set; }
+        public long? taskId { get; set; }
+        public long? expFrom { get; set; }
+        public long? expTo { get; set; }
+        public long? noOfResources { get; set; }
+        public DateTime?  tentStartDate { get; set; }
+        public long? logistics { get; set; }
+        public long? onsiteDurationType { get; set; }
+        public long? hourlyRateType { get; set; }
+        public Double? hourlyReate  { get; set; }
         public DateTime? profReqLastDate { get; set; }
 
-        public long onsiteDuration { get; set; }
+        public long? onsiteDuration { get; set; }
 
 
     }
