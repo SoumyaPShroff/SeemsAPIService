@@ -57,7 +57,6 @@ namespace SeemsAPIService.API.Controllers
         }
 
         //above password verification is not safe w.r.t security reasons
-
         //[HttpPost("VerifyLoginUser")]
         //public async Task<IActionResult> VerifyLoginUser([FromBody] LoginRequestDto request)
         //{
