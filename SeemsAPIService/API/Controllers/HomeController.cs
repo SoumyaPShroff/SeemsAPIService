@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MySqlConnector;
+using SeemsAPIService.Application.DTOs;
 using SeemsAPIService.Application.Services;
 using SeemsAPIService.Domain.Entities;
 using SeemsAPIService.Infrastructure.Persistence;
@@ -24,19 +25,20 @@ namespace SeemsAPIService.API.Controllers
             _reusableServices = reusableServices;
         }
 
-        [HttpGet("VerifyLoginUser/{ploginid}/{ppassword}")]
-        public async Task<ActionResult> VerifyLoginUser(string ploginid, string ppassword)
+ 
+        [HttpPost("VerifyLoginUser")]
+        public async Task<IActionResult> VerifyLoginUser([FromBody] LoginRequestDto request)
 
         {
             try
             {
-                // Convert plain text password to Base64
-                string encodedPassword = Convert.ToBase64String(Encoding.UTF8.GetBytes(ppassword));
-                //  string encodedPassword = AesEncryptionHelper.EncryptToBase64(ppassword);
 
+                // Convert plain text password to Base64
+                string encodedPassword = Convert.ToBase64String(Encoding.UTF8.GetBytes(request.Password));
                 var VerifyLoginUser = await _context.Login
-                                             .Where(l => l.LoginID == ploginid && l.Password == encodedPassword)
+                                             .Where(l => l.LoginID == request.LoginID && l.Password == encodedPassword)
                                              .FirstOrDefaultAsync();
+
                 if (VerifyLoginUser == null)
                 {
                     // Return a 401 Unauthorized status code with a meaningful message
@@ -53,6 +55,34 @@ namespace SeemsAPIService.API.Controllers
                 return StatusCode(500, new { message = "An error occurred.", details = ex.Message });
             }
         }
+
+        //above password verification is not safe w.r.t security reasons
+
+        //[HttpPost("VerifyLoginUser")]
+        //public async Task<IActionResult> VerifyLoginUser([FromBody] LoginRequestDto request)
+        //{
+        //    try
+        //    {
+        //        var user = await _context.Login
+        //            .FirstOrDefaultAsync(l => l.LoginID == request.LoginID);
+
+        //        if (user == null)
+        //            return Unauthorized(new { message = "Invalid username or password." });
+
+        //        // Verify hashed password
+        //        bool isValid = BCrypt.Net.BCrypt.Verify(request.Password, user.Password);
+
+        //        if (!isValid)
+        //            return Unauthorized(new { message = "Invalid username or password." });
+
+        //        return Ok(new { loginId = user.LoginID });
+        //    }
+        //    catch
+        //    {
+        //        return StatusCode(500, new { message = "An error occurred." });
+        //    }
+        //}
+
 
         [HttpPost("ResetPassword/{ploginid}/{pNewpassword}")]
         public async Task<IActionResult> ResetPassword(string ploginid, string pNewpassword)
@@ -71,7 +101,13 @@ namespace SeemsAPIService.API.Controllers
                     return NotFound(new { message = "User not found." });
 
                 // ✅ Encode the password in Base64
-                string encodedPassword = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(pNewpassword));
+                  string encodedPassword = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(pNewpassword)); //avoided base64 for security reasons
+                //any one can reverse the base64 to get original password 
+                //use hashing algorithm instead of encryption for password storage
+                // Salted
+               // One - way
+               // Cannot be reversed
+              //  string encodedPassword = BCrypt.Net.BCrypt.HashPassword(pNewpassword);
 
                 user.Password = encodedPassword;
                 int affected = await _context.SaveChangesAsync();

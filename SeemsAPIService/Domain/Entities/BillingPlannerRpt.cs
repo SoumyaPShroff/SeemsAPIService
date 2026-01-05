@@ -42,5 +42,7 @@ namespace SeemsAPIService.Domain.Entities
         public string jobtitle { get; set; }
         public double? RejectedHrs { get; set; }
         public string projectmanagerid { get; set; }
+        public string PODate { get; set; }
+        public string RealisedDate { get; set; }
     }
 }

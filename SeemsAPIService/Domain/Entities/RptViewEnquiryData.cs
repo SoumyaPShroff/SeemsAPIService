@@ -12,6 +12,7 @@ namespace SeemsAPIService.Domain.Entities
         public string Job_Createdon {  get; set; }
         public string salesperson { get; set; }
         public string  completeresponsibility { get; set; }
+        public string quoteCreatedby { get; set; }  
         public string status { get; set; }
         public string remarks { get; set; }
         public string cancelledremarks { get; set; }

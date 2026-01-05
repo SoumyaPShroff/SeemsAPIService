@@ -64,6 +64,10 @@ namespace SeemsAPIService.Domain.Entities
         public string? npinew_jobwork { get; set; } = "NO";
         public string? ReferenceBy { get; set; }
 
+        public string? vaMech { get; set; } 
+
+
+
         // onsite extra fields
         public long? toolLicense { get; set; }
         public long? toolId { get; set; }
@@ -77,9 +81,6 @@ namespace SeemsAPIService.Domain.Entities
         public long? hourlyRateType { get; set; }
         public Double? hourlyReate  { get; set; }
         public DateTime? profReqLastDate { get; set; }
-
         public long? onsiteDuration { get; set; }
-
-
     }
 }

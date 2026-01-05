@@ -61,6 +61,8 @@
         public required string ToMailList { get; set; }
         public string? CCMailList { get; set; }
 
+        public string? vaMech {  get; set; }    
+
         // onsite extra fields
         public long toolLicense { get; set; }
         public long toolId { get; set; }

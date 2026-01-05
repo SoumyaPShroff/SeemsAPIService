@@ -14,6 +14,7 @@ using System.Numerics;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SeemsAPIService.API.Controllers
 {
@@ -333,6 +334,7 @@ namespace SeemsAPIService.API.Controllers
                     appendreq = enquiry.appendreq ?? "",
                     ReferenceBy = enquiry.ReferenceBy ?? "",
                     tm = enquiry.tm,
+                    vaMech = DefaultNo(enquiry.vaMech),
 
                     toolLicense = enquiry.toolLicense,          //onsite fields
                     toolId = enquiry.toolId,
@@ -406,7 +408,8 @@ namespace SeemsAPIService.API.Controllers
                     var taskname = _reusableServices.GetHOPCTasks(newEnquiry.taskId);
                     var toolname = _reusableServices.GetStageTools(newEnquiry.toolId);
                     var toolLicenseName = "";
-                    if (newEnquiry.toolId == 1) {
+                    if (newEnquiry.toolId == 1)
+                    {
                         toolLicenseName = "With License";
                     }
                     {
@@ -472,8 +475,8 @@ namespace SeemsAPIService.API.Controllers
                             ";
 
                     }
-                        // }
-                   // 🚀 Send email with final merged To + CC list
+                    // }
+                    // 🚀 Send email with final merged To + CC list
                     await _emailTriggerService.SendEmailAsync(
                         toEmail: string.Join(";", toUsers),
                         subject: subject,
@@ -487,8 +490,8 @@ namespace SeemsAPIService.API.Controllers
             {
                 return StatusCode(500, new { message = "Error saving enquiry", details = ex.Message });
             }
-}
- 
+        }
+
 
         [HttpPut("EditEnquiryData")]
         public async Task<IActionResult> EditEnquiryData([FromForm] EnquiryDto enquiry, IFormFile? file)
@@ -559,6 +562,7 @@ namespace SeemsAPIService.API.Controllers
                 existing.appendreq = enquiry.appendreq ?? "";
                 existing.ReferenceBy = enquiry.ReferenceBy ?? "";
                 existing.tm = enquiry.tm;
+                existing.vaMech = enquiry.vaMech;
 
                 existing.toolLicense = enquiry.toolLicense;        //onsite fields
                 existing.toolId = enquiry.toolId;
@@ -704,5 +708,174 @@ namespace SeemsAPIService.API.Controllers
             return Ok(customerName);
         }
 
+        [HttpGet("EnqCustLocContData")]
+        public async Task<IActionResult> EnqCustLocContData(string penquiryno)
+        {
+            try
+            {
+                var result = (
+                from e in _context.se_enquiry
+                join c in _context.customer on e.customer_id equals c.itemno
+                join sl in _context.se_customer_locations on e.location_id equals sl.location_id
+                join sc in _context.se_customer_contacts on e.contact_id equals sc.contact_id
+                where e.enquiryno == penquiryno
+                select new
+                {
+                    Customer = c.Customer,
+                    Location = sl.location,
+                    ContactName = sc.ContactName,
+                    Address = sl.address,
+                    enquirytype = e.enquirytype
+                }
+            ).FirstOrDefault();
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "An error occurred while fetching EnqCustLocContData.", error = ex.Message });
+            }
+        }
+
+        [HttpGet("QuoteBoardDescriptions")]
+        public async Task<IActionResult> QuoteBoardDescriptions()
+        {
+            try
+            {
+                var excludedLayouts = new[]
+                {
+                    "PCB Layout",
+                    "PCBA",
+                    "Timing Analysis",
+                    "PCB Layout at Sienna ECAD"
+                };
+
+                var result = await _context.se_quotlayout
+                    .Where(q => !excludedLayouts.Contains(q.layout))
+                    .ToListAsync();
+
+                return Ok(result);
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { message = "An error occurred while fetching QuoteBoardDescriptions.", error = ex.Message });
+            }
+
+        }
+        private int GetCurrentFinancialYear()
+        {
+            var today = DateTime.Today;
+
+            // Financial year starts in April
+            if (today.Month >= 4)
+                return today.Year;
+            else
+                return today.Year - 1;
+        }
+
+        private async Task<string> GetNewQuoteNumberAsync()
+        {
+            int year = GetCurrentFinancialYear();
+
+            // Get max quote number > 2032
+            int maxQuoteNo = await _context.se_quotation
+                .Where(q => q.quoteNo != null && q.quoteNo.CompareTo("2032") > 0)
+                .Select(q => Convert.ToInt32(q.quoteNo))
+                .DefaultIfEmpty(0)
+                .MaxAsync();
+
+            string newQuoteNumber;
+
+            if (maxQuoteNo < (year * 10000))
+            {
+                newQuoteNumber = $"{year}0001";
+            }
+            else
+            {
+                newQuoteNumber = (maxQuoteNo + 1).ToString();
+            }
+
+            return newQuoteNumber;
+        }
+
+        [HttpPost("AddQuotation")]
+        public async Task<IActionResult> AddQuotation([FromBody] QuotationDto dto)
+
+        {
+            //   using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                var quoteNo = await GetNewQuoteNumberAsync();
+
+                // 🔹 1. Insert into se_quotation (HEADER)
+                var quotation = new se_quotation
+                {
+                    quoteNo = quoteNo,
+                    board_ref = dto.board_ref,
+                    enquiryno = dto.enquiryno,
+                    createdBy = dto.createdBy,
+                    versionNo = dto.versionNo,
+                    tandc = dto.tandc,
+                };
+
+                _context.se_quotation.Add(quotation);
+                await _context.SaveChangesAsync();
+
+                // 🔹 2. Insert into se_quotation_items (LINE ITEMS)
+                var items = dto.Items.Select(i => new se_quotation_items
+                {
+                    quoteNo = quoteNo,
+                    layout = i.layout,
+                    quantity = i.quantity,
+                    unit_rate = i.unit_rate,
+                    currency_id = i.currency_id,
+                    created_on = DateTime.Now.ToString("yyyy-MM-dd"),
+                    updatedbyid =  i.updatedbyid,
+                    versionNo = i.versionNo,
+                    durationtype = i.durationtype,
+
+                }).ToList();
+
+                _context.se_quotation_items.AddRange(items);
+
+                return Ok(new
+                {
+                    message = "Quotation saved successfully",
+                    quoteNo = dto.quoteNo
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+   
+       [HttpGet("QuoteDetailsByQuoteNo/{penquiryno}/{pquoteno}")]
+        public async Task<IActionResult> QuoteDetailsByQuoteNo(string penquiryno,string pquoteno)
+        {
+            try
+            {
+                var quotation = await _context.se_quotation.Where(s => s.enquiryno == penquiryno && s.quoteNo == pquoteno)
+                    .ToListAsync();
+
+                if (quotation == null)
+                    return NotFound("No quotation data found for the selected quotation.");
+
+                return Ok(quotation);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "An error occurred while fetching quotation.",
+                    error = ex.Message
+                });
+            }
+        }
     }
 }

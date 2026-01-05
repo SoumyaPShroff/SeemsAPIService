@@ -46,6 +46,10 @@ namespace SeemsAPIService.Infrastructure.Persistence
         public DbSet<SidebarAccessMenus> SidebarAccessMenus { get; set; }
         public DbSet<roledesignations> roledesignations { get; set; }
         public DbSet<se_stages_tools> se_stages_tools { get; set; }
+        public DbSet<se_quotlayout> se_quotlayout {  get; set; }
+        public DbSet<se_quotation> se_quotation { get; set; }
+       public DbSet<se_quotation_items> se_quotation_items { get; set; }
+
         public async Task<object> GetTentativeQuotedOrders()
         {
             using var connection = Database.GetDbConnection();
