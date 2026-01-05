@@ -241,10 +241,8 @@ namespace SeemsAPIService.API.Controllers
                 if (enquiry.customer_id == 0 ||
                     enquiry.contact_id == 0 ||
                     string.IsNullOrWhiteSpace(enquiry.type) ||
-                    // string.IsNullOrWhiteSpace(enquiry.inputreceivedthru) ||
                     string.IsNullOrWhiteSpace(enquiry.salesresponsibilityid) ||
                     string.IsNullOrWhiteSpace(enquiry.completeresponsibilityid) ||
-                    //  string.IsNullOrWhiteSpace(enquiry.govt_tender) ||
                     string.IsNullOrWhiteSpace(enquiry.createdBy))
                 {
                     return BadRequest(new { message = "Missing required fields" });
@@ -399,8 +397,6 @@ namespace SeemsAPIService.API.Controllers
                     var customerAbbrev = GetCustomerAbbreviation(newEnquiry.customer_id ?? 0);
                     var completeRespName = _reusableServices.GetUserName(newEnquiry.completeresponsibilityid);
                     var salesRespName = _reusableServices.GetUserName(newEnquiry.salesresponsibilityid);
-                    //  var customername = CustomerById(newEnquiry.customer_id);
-                    // var customerResult = await CustomerById(newEnquiry.customer_id ?? 0)) as OkObjectResult;
                     var customerResult = await CustomerById(newEnquiry.customer_id ?? 0) as OkObjectResult;
                     dynamic customer = customerResult.Value;
                     string customername = customer.Customer;

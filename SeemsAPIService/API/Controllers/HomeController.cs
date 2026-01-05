@@ -523,54 +523,5 @@ namespace SeemsAPIService.API.Controllers
             return Ok(tasks);
         }
 
-
-        //public async Task<IActionResult> StageTools(long? pToolId )
-        //{
-        //    List<se_stages_tools> stageTools;
-
-        //    // ✅ If NO toolId is passed → return all default tools
-        //    if (pToolId == null)
-        //    {
-        //        stageTools = await _context.se_stages_tools
-        //            .Where(s => s.condition_tool == 1)
-        //            .OrderBy(s => s.Tools)
-        //            .ToListAsync();
-        //    }
-        //    // ✅ If toolId IS passed → return only matching tool
-        //    else
-        //    {
-        //        stageTools = await _context.se_stages_tools
-        //            .Where(s => s.condition_tool == 1 && s.Idno == pToolId)
-        //            .OrderBy(s => s.Tools)
-        //            .ToListAsync();
-        //    }
-
-        //    if (stageTools == null || !stageTools.Any())
-        //        return NotFound("No stage tools found.");
-
-        //    return Ok(stageTools);
-        //}
-
-        //[HttpGet("HOPCTasks")]
-        //public async Task<IActionResult> HOPCTasks(long? taskId)
-        //{
-        //    var hopcTasks = await _context.setting_employee
-        //        .Where(s => s.condition_task == 1 &&
-        //                    s.tasktype != null &&
-        //                    (!taskId.HasValue || s.itemnumber == taskId.Value))   
-        //        .Select(s => new
-        //        {
-        //            s.itemnumber,
-        //            s.tasktype
-        //        })
-        //        .OrderBy(s => s.tasktype)
-        //        .ToListAsync();
-
-        //    if (!hopcTasks.Any())
-        //        return NotFound("No hopcTasks found.");
-
-        //    return Ok(hopcTasks);
-        //}
-
     }
 }
