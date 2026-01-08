@@ -1,526 +1,226 @@
-﻿
-using Microsoft.AspNetCore.Identity.Data;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MySqlConnector;
 using SeemsAPIService.Application.DTOs;
+using SeemsAPIService.Application.Interfaces;
 using SeemsAPIService.Application.Services;
 using SeemsAPIService.Domain.Entities;
 using SeemsAPIService.Infrastructure.Persistence;
-using System.Linq;
-using System.Security.AccessControl;
 using System.Text;
 
 namespace SeemsAPIService.API.Controllers
 {
     public class HomeController : ControllerBase
     {
-        private readonly AppDbContext _context;
-        private readonly EmailTriggerService _emailService;
-        private readonly IReusableServices _reusableServices;
-        public HomeController(AppDbContext context, EmailTriggerService emailService, IReusableServices reusableServices    )
+        private readonly IAuthService _authService;
+        private readonly IReusableService _reusableService;
+        private readonly IEmailService _emailService;
+        private readonly IUserQueryService _userQueryService;
+        private readonly IUserAccessService _accessService;
+        private readonly ICommonQueryService _commonService;
+
+        public HomeController(IAuthService authService,IReusableService reusableService,IEmailService emailService, IUserQueryService userQueryService, IUserAccessService accessService, ICommonQueryService commonService)
         {
-            _context = context;
+            _authService = authService;
+            _reusableService = reusableService;
             _emailService = emailService;
-            _reusableServices = reusableServices;
+            _userQueryService = userQueryService;
+            _accessService = accessService;
+            _commonService = commonService;
         }
 
- 
         [HttpPost("VerifyLoginUser")]
         public async Task<IActionResult> VerifyLoginUser([FromBody] LoginRequestDto request)
-
         {
-            try
-            {
+            bool isValid = await _authService.VerifyLoginAsync(request);
 
-                // Convert plain text password to Base64
-                string encodedPassword = Convert.ToBase64String(Encoding.UTF8.GetBytes(request.Password));
-                var VerifyLoginUser = await _context.Login
-                                             .Where(l => l.LoginID == request.LoginID && l.Password == encodedPassword)
-                                             .FirstOrDefaultAsync();
+            if (!isValid)
+                return Unauthorized(new { message = "Invalid username or password." });
 
-                if (VerifyLoginUser == null)
-                {
-                    // Return a 401 Unauthorized status code with a meaningful message
-                    return Unauthorized(new { message = "Invalid username or password." });
-                }
-
-                // Return success response with the user's login ID
-                return Ok(new { loginId = VerifyLoginUser.LoginID });
-            }
-            catch (Exception ex)
-            {
-                // Return a 500 Internal Server Error with the exception details
-                // Avoid exposing sensitive details in production
-                return StatusCode(500, new { message = "An error occurred.", details = ex.Message });
-            }
+            return Ok(new { loginId = request.LoginID });
         }
 
-        //above password verification is not safe w.r.t security reasons
-        //[HttpPost("VerifyLoginUser")]
-        //public async Task<IActionResult> VerifyLoginUser([FromBody] LoginRequestDto request)
-        //{
-        //    try
-        //    {
-        //        var user = await _context.Login
-        //            .FirstOrDefaultAsync(l => l.LoginID == request.LoginID);
-
-        //        if (user == null)
-        //            return Unauthorized(new { message = "Invalid username or password." });
-
-        //        // Verify hashed password
-        //        bool isValid = BCrypt.Net.BCrypt.Verify(request.Password, user.Password);
-
-        //        if (!isValid)
-        //            return Unauthorized(new { message = "Invalid username or password." });
-
-        //        return Ok(new { loginId = user.LoginID });
-        //    }
-        //    catch
-        //    {
-        //        return StatusCode(500, new { message = "An error occurred." });
-        //    }
-        //}
-
-
-        [HttpPost("ResetPassword/{ploginid}/{pNewpassword}")]
-        public async Task<IActionResult> ResetPassword(string ploginid, string pNewpassword)
+        [HttpPost("ResetPassword/{loginId}/{newPassword}")]
+        public async Task<IActionResult> ResetPassword(string loginId, string newPassword)
         {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(ploginid) || string.IsNullOrWhiteSpace(pNewpassword))
-                    return BadRequest(new { message = "Login ID and new password are required." });
-
-                // 🔍 Step 1: Find user by login ID
-                var user = await _context.Login
-                    .Where(l => l.LoginID == ploginid)
-                    .FirstOrDefaultAsync();
-
-                if (user == null)
-                    return NotFound(new { message = "User not found." });
-
-                // ✅ Encode the password in Base64
-                  string encodedPassword = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(pNewpassword)); //avoided base64 for security reasons
-                //any one can reverse the base64 to get original password 
-                //use hashing algorithm instead of encryption for password storage
-                // Salted
-               // One - way
-               // Cannot be reversed
-              //  string encodedPassword = BCrypt.Net.BCrypt.HashPassword(pNewpassword);
-
-                user.Password = encodedPassword;
-                int affected = await _context.SaveChangesAsync();
-
-                return Ok(new { message = "Password updated successfully." });
-            }
-            catch (Exception ex)
-            {
-                // Log the error (don’t expose in production)
-                return StatusCode(500, new { message = "An error occurred while resetting the password.", details = ex.Message });
-            }
+            await _authService.ResetPasswordAsync(loginId, newPassword);
+            return Ok(new { message = "Password updated successfully." });
         }
 
-        [HttpGet("ForgotPassword/{ploginid}")]
-        public async Task<IActionResult> ForgotPassword(string ploginid)
+        [HttpGet("ForgotPassword/{loginId}")]
+        public async Task<IActionResult> ForgotPassword(string loginId)
         {
-            if (string.IsNullOrEmpty(ploginid))
-                return BadRequest(new { message = "Login ID is required." });
+            var email = await _authService.GetEmailByLoginIdAsync(loginId);
 
-            // 1️⃣ Fetch the Email ID from SQL (Login Table)
-            var user = await _context.Login
-                .Where(l => l.LoginID == ploginid)
-                .Select(l => new { l.LoginID, l.EmailID })
-                .FirstOrDefaultAsync();
+            if (string.IsNullOrEmpty(email))
+                return NotFound("Email not found.");
 
-            if (user == null || string.IsNullOrEmpty(user.EmailID))
-                return NotFound(new { message = "Email not found for the given Login ID." });
-
-            // 2️⃣ Build email content
-            string toEmail = user.EmailID;
             string subject = "Forgot Password - Sienna ECAD System";
             string body = $@"
-                <p>Dear {user.LoginID},</p>
-                <p>You have requested to retrieve your password or reset it.</p>
-                <p>Please contact your administrator or use your login credentials if remembered.</p>
-                <p>– Sienna ECAD Team</p>";
+                <p>Dear {loginId},</p>
+                <p>You requested password recovery.</p>
+                <p>Please contact your administrator.</p>";
 
-            try
-            {
-                // 3️⃣ Call your independent Email Service
-                await _emailService.SendEmailAsync(user.EmailID, subject, body);
-                return Ok(new { message = $"Email successfully sent to {toEmail}" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = $"Failed to send email: {ex.Message}" });
-            }
+            await _emailService.SendEmailAsync(email, subject, body);
+
+            return Ok(new { message = $"Email sent to {email}" });
         }
+
+        // ---------------- COMMON ----------------
+
         [HttpGet("UserName/{loginId}")]
-        public IActionResult UserName(string loginId)
+        public async Task<IActionResult> UserName(string loginId)
         {
-            var name = _reusableServices.GetUserName(loginId);
+            var name = await _reusableService.GetUserNameAsync(loginId);
             return Ok(name ?? "");
         }
 
-        [HttpGet("EmailId/{loginIds}")]
-        public IActionResult GetEmailIDs(string loginIds)
-        {
-            try
-            {
-                var ids = loginIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                                  .Select(id => id.Trim())
-                                  .ToList();
-
-                var emailList = (
-                    from login in _context.Login
-                    join emp in _context.general_employee
-                        on login.LoginID equals emp.IDno
-                    where ids.Contains(login.LoginID)
-                        && emp.EmpStatus == "Active"
-                    select login.EmailID
-                ).Distinct().ToList();
-
-                if (emailList == null || emailList.Count == 0)
-                    return NotFound($"No email IDs found for LoginID(s): {loginIds}");
-
-                return emailList.Count == 1
-                    ? Ok(emailList.First())  // return string for single
-                    : Ok(emailList);         // return list for multiple
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, ex.Message);
-            }
-        }
-
-
-        [HttpGet("ManagerCostcenterInfo/{pLoginId}")]
-        public IActionResult ManagerCostcenterInfo(string pLoginId)
-        {
-            try
-            {
-                var managerInfo = _context.setting_employee
-                    .Where(l => l.HOPC1ID == pLoginId)
-                    .Select(l => new
-                    {
-                        hopc1id = l.HOPC1ID,
-                        hopc1name = l.HOPC1NAME,
-                        costcenter = l.costcenter
-                    })
-                    .ToList();
-
-                if (managerInfo == null || managerInfo.Count == 0)
-                    return NotFound($"No manager found with HOPC1ID '{pLoginId}'");
-
-                return Ok(managerInfo);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
-        }
-
-
-        [HttpGet("HOPCManagerList")]
-        public async Task<List<HOPCManagerList>> HOPCManagerList()
-
-        {
-            {
-                List<HOPCManagerList> list;
-                string sql = $"CALL sp_HOPCManagers()";
-                list = await _context.HOPCManagerList.FromSqlRaw<HOPCManagerList>(sql).ToListAsync();
-                return list;
-
-            }
-        }
-
-        [HttpGet("UserRoleInternalRights/{pRole}/{pPageName}")]
-        public async Task<ActionResult<bool>> UserRoleInternalRights(string pRole, string pPageName)
-        {
-            try
-            {
-                // Get the record for that role
-                var roleRecord = await _context.employeeroles
-                    .FirstOrDefaultAsync(e => e.Roles == pRole.Trim());
-
-                if (roleRecord == null)
-                    //return NotFound("Role not found");
-                    return false;
-
-                // Use reflection to dynamically check the column value
-                var property = roleRecord.GetType().GetProperty(pPageName,
-                    System.Reflection.BindingFlags.IgnoreCase |
-                    System.Reflection.BindingFlags.Public |
-                    System.Reflection.BindingFlags.Instance);
-
-                if (property == null)
-                    // return BadRequest("Invalid page name");
-                    return false;
-
-                var value = property.GetValue(roleRecord);
-                //if value is null then returns 0
-                bool hasAccess = Convert.ToInt32(value ?? 0) == 1;
-
-                return Ok(hasAccess);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error: {ex.Message}");
-                return StatusCode(500, "Internal server error");
-            }
-        }
-
-        [HttpGet("UserDesignation/{pLoginId}")]
-        public IActionResult UserDesignation(string pLoginId)
-
-        {
-            try
-            {
-                var userjobtitle = _context.general_employee.Where(g => g.IDno == pLoginId && g.EmpStatus == "Active").Select(l => l.JobTitle).FirstOrDefault();
-
-                if (userjobtitle == null)
-                    return NotFound($"No designation found with loginid '{pLoginId}'");
-
-                return Ok(userjobtitle);
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
-
-        [HttpGet("AllActiveEmployees")]
-        public async Task<IActionResult> AllActiveEmployees()
-        {
-            try
-            {
-                var activeEmps = await _context.general_employee.Where(e => e.EmpStatus == "Active").Select(e => new { e.IDno, e.Name, e.EmailId }).ToListAsync();
-
-                if (activeEmps == null || !activeEmps.Any())
-                    return NotFound("No active employees found.");
-
-                return Ok(activeEmps);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    new { message = "An error occurred while fetching active employees.", error = ex.Message });
-            }
-        }
-
-        [HttpGet("AnalysisManagers")]
-        public async Task<IActionResult> AnalysisManagers()
-        {
-            try
-            {
-                   var analyMngrs = await (
-                     from s in _context.setting_employee
-                     join l in _context.Login
-                         on s.HOPC1ID equals l.LoginID
-                     where s.costcenter_analysis == "YES"
-                        && s.costcenter_status == "Active"
-                     select new
-                     {
-                         s.HOPC1ID,
-                         s.HOPC1NAME,
-                         l.EmailID
-                     }
-                 ).ToListAsync();
-                if (analyMngrs == null || !analyMngrs.Any())
-                    return NotFound("No analyMngrs found.");
-
-                return Ok(analyMngrs);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    new { message = "An error occurred while fetching analyMngrs.", error = ex.Message });
-            }
-        }
-        [HttpGet("DesignManagers")]
-        public async Task<IActionResult> DesignManagers()
-        {
-            try
-            {
-                var designMngrs = await (
-                    from s in _context.setting_employee
-                    join l in _context.Login
-                        on s.HOPC1ID equals l.LoginID
-                    where s.design == "YES"
-                       && s.costcenter_status == "Active"
-                    select new
-                    {
-                        s.HOPC1ID,
-                        s.HOPC1NAME,
-                        l.EmailID
-                    }
-                ).ToListAsync();
-                if (designMngrs == null || !designMngrs.Any())
-                    return NotFound("No designMngrs found.");
-
-                return Ok(designMngrs);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    new { message = "An error occurred while fetching designMngrs.", error = ex.Message });
-            }
-        }
-        public class SalesManagerDto
-        {
-            public string ID { get; set; } = string.Empty;
-            public string Name { get; set; } = string.Empty;
-
-            public string EmailID { get; set; } = string.Empty;
-        }
-        [HttpGet("SalesManagers")]
-        public async Task<IActionResult> SalesManagers()
-        {
-            try
-            {
-                var settingList = await (
-                    from s in _context.setting_employee
-                    join l in _context.Login
-                        on s.HOPC1ID equals l.LoginID
-                    where s.costcenter_sales == "YES"
-                       && s.costcenter_status == "Active"
-                    select new SalesManagerDto
-                    {
-                        ID = s.HOPC1ID,
-                        Name = s.HOPC1NAME,
-                        EmailID = l.EmailID
-                    }
-                ).ToListAsync();
-                var generalList = await (
-                    from g in _context.general_employee
-                    join l in _context.Login
-                        on g.IDno equals l.LoginID
-                    where g.Functional == "Selling"
-                       && g.JobTitle.Contains("sales")
-                       && g.EmpStatus == "Active"
-                    select new SalesManagerDto
-                    {
-                        ID = g.IDno,
-                        Name = g.Name,
-                        EmailID = l.EmailID
-                    }
-                ).ToListAsync();
-
-                // Combine and de-duplicate by ID (keep the first occurrence)
-                var combined = settingList
-                    .Concat(generalList)
-                    .GroupBy(x => x.ID)
-                    .Select(g => g.First())
-                    .OrderBy(x => x.Name)   // optional: order by name
-                    .ToList();
-
-                if (combined == null || !combined.Any())
-                    return NotFound("No sales managers found.");
-
-                return Ok(combined);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    new { message = "An error occurred while fetching sales managers.", error = ex.Message });
-            }
-        }
-        [HttpGet("salesnpiusers")]
-        public async Task<IActionResult> salesnpiusers()
-
-        {
-            try
-            {
-                var salesnpiMngrs = await (
-                      from s in _context.view_salesnpiusers
-                      join l in _context.Login
-                          on s.IDno equals l.LoginID
-                      select new
-                      {
-                          s.IDno,
-                          s.Name,
-                          l.EmailID
-                      }
-                  ).ToListAsync();
-                if (salesnpiMngrs == null || !salesnpiMngrs.Any())
-                    return NotFound("No salesnpiMngrs found.");
-
-                return Ok(salesnpiMngrs);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    new { message = "An error occurred while fetching salesnpiMngrs.", error = ex.Message });
-            }
-        }
-
-        [HttpGet("SalesEnq_Email_Recipients")]
-        public async Task<List<object>> SalesEnq_Email_Recipients()
-        {
-            var defaultMails =
-                from a in _context.Email_Recipients
-                join b in _context.Login on a.LoginId equals b.LoginID into g
-                from b in g.DefaultIfEmpty()
-                where a.Design == "1"
-                select new
-                {
-                    a.LoginId,
-                    a.EnqCreated_PositionInEmail,
-                    EmailID = b != null ? b.EmailID : null
-                };
-
-            // Project anonymous type to object
-            var result = await defaultMails
-                .Select(x => (object)x)
-                .ToListAsync();
-
-            return result;
-        }
-        [HttpGet("SideBarAccessMenus/{designationId}")]
-        public async Task<List<SidebarAccessMenus>> SideBarAccessMenus(int designationId)
-
-        {
-            {
-                List<SidebarAccessMenus> list;
-                string sql = $"CALL sp_GetSidebarAccess('{designationId}')";
-                list = await _context.SidebarAccessMenus.FromSqlRaw<SidebarAccessMenus>(sql).ToListAsync();
-                return list;
-
-            }
-        }
-        [HttpGet("RoleDesignID/{designationName}")]
-        public async Task<long> RoleDesignID(string designationName)
-
-        {
-            {
-              var designID =  await _context.roledesignations.Where(r => r.designation == designationName)
-                              .Select(r => r.designationid)
-                              .FirstOrDefaultAsync();
-                return designID;
-
-            }
-        }
         [HttpGet("StageTools")]
-        public async Task<IActionResult> StageTools(long? pToolId)
+        public async Task<IActionResult> StageTools(long? toolId)
         {
-            var tools = await _reusableServices.GetStageTools(pToolId);
+            var tools = await _reusableService.GetStageToolsAsync(toolId);
 
-            if (tools == null || !tools.Any())
+            if (!tools.Any())
                 return NotFound("No stage tools found.");
 
             return Ok(tools);
         }
 
         [HttpGet("HOPCTasks")]
-        public async Task<IActionResult> HOPCTasks(long? pTaskId)
+        public async Task<IActionResult> HOPCTasks(long? taskId)
         {
-            var tasks = await _reusableServices.GetHOPCTasks(pTaskId);
+            var tasks = await _reusableService.GetHOPCTasksAsync(taskId);
 
-            if (tasks == null || !tasks.Any())
+            if (!tasks.Any())
                 return NotFound("No hopc tasks found.");
 
             return Ok(tasks);
         }
+        // ---------------- HOPCManagerList ----------------
+        [HttpGet("HOPCManagerList")]
+        public async Task<IActionResult> HOPCManagerList()
+        {
+            var list = await _userQueryService.GetHOPCManagerListAsync();
 
+            if (list == null || !list.Any())
+                return NotFound("No HOPC managers found.");
+
+            return Ok(list);
+        }
+
+        // ---------------- ManagerCostcenterInfo ----------------
+        [HttpGet("ManagerCostcenterInfo/{loginId}")]
+        public async Task<IActionResult> ManagerCostcenterInfo(string loginId)
+        {
+            var result = await _userQueryService.GetManagerCostcenterInfoAsync(loginId);
+
+            if (result == null || !result.Any())
+                return NotFound($"No manager found with HOPC1ID '{loginId}'");
+
+            return Ok(result);
+        }
+
+        // ---------------- GetEmailIDs ----------------
+        [HttpGet("EmailId/{loginIds}")]
+        public async Task<IActionResult> GetEmailIDs(string loginIds)
+        {
+            var result = await _userQueryService.GetEmailIDsAsync(loginIds);
+
+            if (result is List<string> list && list.Count == 0)
+                return NotFound($"No email IDs found for LoginID(s): {loginIds}");
+
+            return Ok(result);
+        }
+        // -------- UserRoleInternalRights --------
+        [HttpGet("UserRoleInternalRights/{role}/{pageName}")]
+        public async Task<IActionResult> UserRoleInternalRights(string role, string pageName)
+        {
+            bool hasAccess = await _accessService.HasRoleAccessAsync(role, pageName);
+            return Ok(hasAccess);
+        }
+
+        // -------- UserDesignation --------
+        [HttpGet("UserDesignation/{loginId}")]
+        public async Task<IActionResult> UserDesignation(string loginId)
+        {
+            var designation = await _accessService.GetUserDesignationAsync(loginId);
+
+            if (designation == null)
+                return NotFound($"No designation found with loginid '{loginId}'");
+
+            return Ok(designation);
+        }
+
+        // -------- AllActiveEmployees --------
+        [HttpGet("AllActiveEmployees")]
+        public async Task<IActionResult> AllActiveEmployees()
+        {
+            var emps = await _accessService.GetAllActiveEmployeesAsync();
+
+            if (!emps.Any())
+                return NotFound("No active employees found.");
+
+            return Ok(emps);
+        }
+
+        // -------- AnalysisManagers --------
+        [HttpGet("AnalysisManagers")]
+        public async Task<IActionResult> AnalysisManagers()
+        {
+            var list = await _accessService.GetAnalysisManagersAsync();
+
+            if (!list.Any())
+                return NotFound("No analysis managers found.");
+
+            return Ok(list);
+        }
+
+        // -------- DesignManagers --------
+        [HttpGet("DesignManagers")]
+        public async Task<IActionResult> DesignManagers()
+        {
+            var list = await _accessService.GetDesignManagersAsync();
+
+            if (!list.Any())
+                return NotFound("No design managers found.");
+
+            return Ok(list);
+        }
+        [HttpGet("SalesManagers")]
+        public async Task<IActionResult> SalesManagers()
+        {
+            var result = await _commonService.GetSalesManagersAsync();
+            if (!result.Any()) return NotFound("No sales managers found.");
+            return Ok(result);
+        }
+
+        [HttpGet("salesnpiusers")]
+        public async Task<IActionResult> SalesNpiUsers()
+        {
+            var result = await _commonService.GetSalesNpiUsersAsync();
+            if (!result.Any()) return NotFound("No sales NPI users found.");
+            return Ok(result);
+        }
+
+        [HttpGet("SalesEnq_Email_Recipients")]
+        public async Task<IActionResult> SalesEnqEmailRecipients()
+        {
+            var result = await _commonService.GetSalesEnqRecipientsAsync();
+            return Ok(result);
+        }
+
+        [HttpGet("SideBarAccessMenus/{designationId}")]
+        public async Task<IActionResult> SideBarAccessMenus(int designationId)
+        {
+            var result = await _commonService.GetSideBarAccessMenusAsync(designationId);
+            return Ok(result);
+        }
+
+        [HttpGet("RoleDesignID/{designationName}")]
+        public async Task<IActionResult> RoleDesignID(string designationName)
+        {
+            var id = await _commonService.GetRoleDesignIdAsync(designationName);
+            return Ok(id);
+        }
     }
 }
+ 

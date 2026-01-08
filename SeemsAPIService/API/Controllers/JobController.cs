@@ -1,84 +1,69 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using SeemsAPIService.Domain.Entities;
-using SeemsAPIService.Infrastructure.Persistence;
+using SeemsAPIService.Application.Interfaces;
 
 namespace SeemsAPIService.API.Controllers
 {
+    [ApiController]
+    [Route("api/[controller]")]
     public class JobController : ControllerBase
     {
+        private readonly IJobService _jobService;
 
-        private readonly AppDbContext _context;
-
-        public JobController(AppDbContext context)
+        public JobController(IJobService jobService)
         {
-            _context = context;
+            _jobService = jobService;
         }
 
-
-        [HttpGet("JobDataByNumber/{pJobnumber}")]
-        public IActionResult GetJobDataByNumber(string pJobnumber)
+        [HttpGet("JobDataByNumber/{jobNumber}")]
+        public async Task<IActionResult> GetJobDataByNumber(string jobNumber)
         {
-            var job = _context.job.FirstOrDefault(j => j.JobNumber == pJobnumber);
+            var job = await _jobService.GetJobByNumberAsync(jobNumber);
+
             if (job == null)
-                return NotFound($"No job found with jobnumber {pJobnumber}");
+                return NotFound($"No job found with jobnumber {jobNumber}");
+
             return Ok(job);
         }
 
-        [HttpGet("JobStatus/{pJobnumber}")]
-        public IActionResult GetJobStatus(string pJobnumber)
+        [HttpGet("JobStatus/{jobNumber}")]
+        public async Task<IActionResult> GetJobStatus(string jobNumber)
         {
-            var jobstatus = _context.job.Where(j => j.JobNumber == pJobnumber).Select(j => j.Status).FirstOrDefault();
-            return Ok(jobstatus);
+            var status = await _jobService.GetJobStatusAsync(jobNumber);
+            return Ok(status);
         }
 
         [HttpGet("BillingPlanner")]
-        public async Task<List<BillingPlannerRpt>> BillingPlanner(string startdate, string enddate, string? costcenter)
-
+        public async Task<IActionResult> BillingPlanner(
+            string startdate,
+            string enddate,
+            string? costcenter)
         {
-            {
-                List<BillingPlannerRpt> list;
-                string sql = $"CALL sp_BillingPlanner ('{startdate}','{enddate}','{costcenter}')";
-                list = await _context.BillingPlannerRpt.FromSqlRaw<BillingPlannerRpt>(sql).ToListAsync();
-                return list;
-            }
+            var result = await _jobService
+                .GetBillingPlannerAsync(startdate, enddate, costcenter);
+
+            return Ok(result);
         }
- 
-        [HttpGet("InvoiceDictionary/{startdate}/{enddate}")]
-        public async Task<List<Invoicedictionary>> InvoiceDictionary(string startdate, string enddate)
 
+        [HttpGet("InvoiceDictionary/{startdate}/{enddate}")]
+        public async Task<IActionResult> InvoiceDictionary(
+            string startdate,
+            string enddate)
         {
-            {
-                List<Invoicedictionary> list;
-                string sql = $"CALL sp_InvoiceDictionary('{startdate}','{enddate}')";
-                list = await _context.Invoicedictionary.FromSqlRaw<Invoicedictionary>(sql).ToListAsync();
-                return list;
-            }
+            var result = await _jobService
+                .GetInvoiceDictionaryAsync(startdate, enddate);
+
+            return Ok(result);
         }
 
         [HttpGet("PCBTools")]
         public async Task<IActionResult> PCBTools()
         {
-            try
-            {
-                var PCBTools = await _context.tool.Where(t => t.Pcbtool != null).Select(t =>  t.Pcbtool).ToListAsync();
+            var tools = await _jobService.GetPCBToolsAsync();
 
-                if (PCBTools == null || !PCBTools.Any())
-                    return NotFound("No PCBTools found.");
+            if (!tools.Any())
+                return NotFound("No PCBTools found.");
 
-                // Add additional entry "-" (make sure no duplicate if not desired)
-                if (!PCBTools.Contains("-"))
-                    PCBTools.Insert(0, "-");     // add on top; use Add() if you want at bottom
-
-
-                return Ok(PCBTools);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    new { message = "An error occurred while fetching PCBTools.", error = ex.Message });
-            }
+            return Ok(tools);
         }
-
     }
 }

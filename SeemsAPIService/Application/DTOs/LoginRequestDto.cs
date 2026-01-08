@@ -1,4 +1,5 @@
-﻿namespace SeemsAPIService.Application.DTOs
+﻿#nullable disable
+namespace SeemsAPIService.Application.DTOs
 {
     public class LoginRequestDto
     {
