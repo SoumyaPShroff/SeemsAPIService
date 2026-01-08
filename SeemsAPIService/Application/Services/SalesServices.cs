@@ -192,7 +192,6 @@ namespace SeemsAPIService.Application.Services
             await _salesRepository.SaveAsync();
         }
 
-
         public async Task<object> GetEnquiryByNumberAsync(string enquiryNo)
         {
             var enquiry = await _salesRepository.GetEnquiryByNoAsync(enquiryNo);
