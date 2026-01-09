@@ -2,8 +2,8 @@
 {
     public class ManagerCostCenterDto
     {
-        public string Hopc1Id { get; set; } = "";
-        public string Hopc1Name { get; set; } = "";
-        public string? CostCenter { get; set; }
+        public string hopc1id { get; set; } = "";
+        public string hopc1name { get; set; } = "";
+        public string? costcenter { get; set; }
     }
 }

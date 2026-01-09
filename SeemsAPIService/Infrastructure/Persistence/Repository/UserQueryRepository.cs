@@ -30,9 +30,9 @@ namespace SeemsAPIService.Infrastructure.Repositories
                 .Where(l => l.HOPC1ID == loginId)
                 .Select(l => new ManagerCostCenterDto
                 {
-                    Hopc1Id = l.HOPC1ID,
-                    Hopc1Name = l.HOPC1NAME,
-                    CostCenter = l.costcenter
+                    hopc1id = l.HOPC1ID,
+                    hopc1name = l.HOPC1NAME,
+                    costcenter = l.costcenter
                 })
                 .ToListAsync();
         }
