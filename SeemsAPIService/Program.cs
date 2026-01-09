@@ -50,9 +50,18 @@ builder.Services.AddCors(options =>
         policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
-builder.Services.AddHttpClient<IEmailService, EmailService>();                    // Email service dependency injection
-var app = builder.Build();
-app.UseCors("AllowAll");
+builder.Services.AddHttpClient<IEmailService, EmailService>();    // Email service dependency injection
+var app = builder.Build();          //follow order from this line, or else app breaks for CORS policy
+
+//capture exception
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();   // shows detailed error in browser
+}
+else
+{
+    app.UseExceptionHandler("/error"); // generic error handler in prod
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
@@ -63,16 +72,19 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 
 app.UseHttpsRedirection();
 
+app.UseRouting();
+
+app.UseCors("AllowAll");
+
 app.UseAuthorization();
 
 // Use CORS policy
-app.UseCors("AllowViteApp");
+app.UseCors("AllowViteApp"); //already declared above
 
 app.UseDefaultFiles();   // serve index.html by default
 app.UseStaticFiles();    // serve files from wwwroot
 
 app.MapControllers();
-
 // Fallback to index.html for React Router
 app.MapFallbackToFile("index.html");
 

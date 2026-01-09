@@ -252,7 +252,7 @@ namespace SeemsAPIService.Application.Services
 
             return data;
         }
-        public async Task<object> GetRptViewEnquiryDataAsync(string? start, string? end)
+        public async Task<object> GetRptViewEnquiryDataAsync(string start, string end)
         {
             return await _salesRepository.GetRptViewEnquiryDataAsync(start, end);
         }

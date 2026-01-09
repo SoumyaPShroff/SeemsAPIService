@@ -151,7 +151,7 @@ namespace SeemsAPIService.Infrastructure.Repositories
                 })
                 .ToListAsync<object>();
         }
-        public async Task<List<RptViewEnquiryData>> GetRptViewEnquiryDataAsync(string? start, string? end)
+        public async Task<List<RptViewEnquiryData>> GetRptViewEnquiryDataAsync(string start, string end)
         {
             string sql;
 

@@ -14,7 +14,7 @@ namespace SeemsAPIService.Application.Interfaces
         Task<object> GetCustomersAsync();
         Task<object> GetCustomerLocationsAsync(int? customerId);
         Task<object> GetCustomerContactsAsync(int? customerId, int? locationId);
-        Task<object> GetRptViewEnquiryDataAsync(string? start, string? end);
+        Task<object> GetRptViewEnquiryDataAsync(string start, string end);
         Task<object> GetStatesAsync();
         Task<List<poenquiries>> GetPoEnquiriesAsync();
         Task<object> GetCustomerByIdAsync(long customerId);

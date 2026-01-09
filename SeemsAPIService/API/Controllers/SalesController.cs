@@ -115,8 +115,8 @@ public class SalesController : ControllerBase
         }
 
 
-        [HttpGet("RptViewEnquiryData")]
-        public async Task<IActionResult> RptViewEnquiryData([FromQuery] string? startdate, [FromQuery] string? enddate)
+        [HttpGet("RptViewEnquiryData/{startdate}/{enddate}")]
+        public async Task<IActionResult> RptViewEnquiryData(string startdate, string enddate)
         {
             var result = await _service.GetRptViewEnquiryDataAsync(startdate, enddate);
             return Ok(result);
