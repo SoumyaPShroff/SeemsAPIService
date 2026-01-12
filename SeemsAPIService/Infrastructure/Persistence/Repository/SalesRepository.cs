@@ -53,7 +53,7 @@ namespace SeemsAPIService.Infrastructure.Repositories
                 .FirstOrDefaultAsync(e => e.enquiryno == enquiryNo);
         }
 
-        public async Task UpdateEnquiryAsync(se_enquiry enquiry)
+        public async Task EditEnquiryAsync(se_enquiry enquiry)
         {
             _context.se_enquiry.Update(enquiry);
             await Task.CompletedTask;
@@ -164,13 +164,22 @@ namespace SeemsAPIService.Infrastructure.Repositories
                 .FromSqlRaw(sql)
                 .ToListAsync();
         }
-        public async Task<List<string>> GetStatesAsync()
+        //public async Task<List<string>> GetStatesAsync()
+        //{
+        //    return await _context.states_ind
+        //        .OrderBy(s => s.State)
+        //        .Select(s => s.State)
+        //        .ToListAsync();
+        //}
+
+        public async Task<List<states_ind>> GetStatesAsync()
         {
             return await _context.states_ind
                 .OrderBy(s => s.State)
-                .Select(s => s.State)
+                .Select(s => new states_ind { State = s.State })
                 .ToListAsync();
         }
+
         public async Task<List<poenquiries>> GetPoEnquiriesAsync()
         {
             return await _context.poenquiries

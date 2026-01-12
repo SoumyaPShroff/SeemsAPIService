@@ -5,8 +5,8 @@ namespace SeemsAPIService.Application.Interfaces
 {
     public interface ISalesService
     {
-        Task<object> CreateEnquiryAsync(EnquiryDto enquiry, IFormFile? file);
-        Task UpdateEnquiryAsync(EnquiryDto enquiry, IFormFile? file);
+        Task<object> AddEnquiryAsync(EnquiryDto enquiry, IFormFile? file);
+        Task<object> EditEnquiryAsync(EnquiryDto enquiry, IFormFile? file);
         Task<object> GetEnquiryByNumberAsync(string enquiryNo);
         Task<List<ThreeMonthConfirmedOrders>> GetThreeMonthConfirmedOrdersAsync(string start,string end);
         Task<object> GetAllEnquiriesAsync(string? salesId, string? status);
@@ -15,7 +15,7 @@ namespace SeemsAPIService.Application.Interfaces
         Task<object> GetCustomerLocationsAsync(int? customerId);
         Task<object> GetCustomerContactsAsync(int? customerId, int? locationId);
         Task<object> GetRptViewEnquiryDataAsync(string start, string end);
-        Task<object> GetStatesAsync();
+        Task<List<states_ind>> GetStatesAsync();
         Task<List<poenquiries>> GetPoEnquiriesAsync();
         Task<object> GetCustomerByIdAsync(long customerId);
         Task<object> GetEnqCustLocContDataAsync(string enquiryNo);

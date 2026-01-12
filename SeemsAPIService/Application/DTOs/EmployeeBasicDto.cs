@@ -2,8 +2,8 @@
 {
     public class EmployeeBasicDto
     {
-        public string Id { get; set; } = "";
-        public string Name { get; set; } = "";
-        public string Email { get; set; } = "";
+        public string iDno { get; set; } = "";
+        public string name { get; set; } = "";
+        public string emailId { get; set; } = "";
     }
 }

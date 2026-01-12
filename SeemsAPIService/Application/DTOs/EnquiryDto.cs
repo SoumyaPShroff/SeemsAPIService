@@ -6,7 +6,7 @@
         public long customer_id { get; set; }
         public long location_id { get; set; }
         public long contact_id { get; set; }
-        public string?  currency_id { get; set; }
+        public string? currency_id { get; set; }
         public string? inputreceivedthru { get; set; }
         public string? design { get; set; }
         public string? library { get; set; }
@@ -32,8 +32,8 @@
         public string? software { get; set; }
         public string? fpg { get; set; }
         public string? npibyid { get; set; }
-        public DateTime  quotation_request_lastdate { get; set; }
-        public string?  govt_tender { get; set; }
+        public DateTime quotation_request_lastdate { get; set; }
+        public string? govt_tender { get; set; }
         public string completeresponsibilityid { get; set; }
         public string salesresponsibilityid { get; set; }
         public string? status { get; set; }
@@ -43,7 +43,7 @@
         public DateTime createdOn { get; set; }
         public string tool { get; set; }
         public string enquirytype { get; set; }
-        public string tm {get; set; }   
+        public string tm { get; set; }
         public string? jobnames { get; set; }
         public string? appendreq { get; set; }
         public string type { get; set; }
@@ -61,22 +61,22 @@
         public required string ToMailList { get; set; }
         public string? CCMailList { get; set; }
 
-        public string? vaMech {  get; set; }    
+        public string? vaMech { get; set; }
 
         // onsite extra fields
         public long toolLicense { get; set; }
         public long toolId { get; set; }
         public long taskId { get; set; }
         public long expFrom { get; set; }
-        public long  expTo { get; set; }
-        public long   noOfResources { get; set; }
-        public DateTime  tentStartDate { get; set; }
+        public long expTo { get; set; }
+        public long noOfResources { get; set; }
+        public DateTime tentStartDate { get; set; }
         public long logistics { get; set; }
         public long onsiteDurationType { get; set; }
-        public long  hourlyRateType { get; set; }
-        public Double  hourlyReate { get; set; }
-        public DateTime  profReqLastDate { get; set; }
+        public long hourlyRateType { get; set; }
+        public Double hourlyReate { get; set; }
+        public DateTime profReqLastDate { get; set; }
 
-        public long  onsiteDuration { get; set; }
+        public long onsiteDuration { get; set; }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption.ConfigurationModel;
+using Microsoft.EntityFrameworkCore;
 using SeemsAPIService.Application.DTOs;
 using SeemsAPIService.Application.Interfaces;
 
@@ -49,9 +50,9 @@ namespace SeemsAPIService.Infrastructure.Persistence.Repository
                 .Where(e => e.EmpStatus == "Active")
                 .Select(e => new EmployeeBasicDto
                 {
-                    Id = e.IDno,
-                    Name = e.Name,
-                    Email = e.EmailId
+                    iDno = e.IDno,
+                    name = e.Name,
+                    emailId = e.EmailId
                 })
                 .ToListAsync();
         }
@@ -67,9 +68,9 @@ namespace SeemsAPIService.Infrastructure.Persistence.Repository
                    && s.costcenter_status == "Active"
                 select new ManagerDto
                 {
-                    Id = s.HOPC1ID,
-                    Name = s.HOPC1NAME,
-                    Email = l.EmailID
+                    HOPC1ID = s.HOPC1ID,
+                    HOPC1NAME = s.HOPC1NAME,
+                    emailID = l.EmailID
                 }
             ).ToListAsync();
         }
@@ -85,9 +86,9 @@ namespace SeemsAPIService.Infrastructure.Persistence.Repository
                    && s.costcenter_status == "Active"
                 select new ManagerDto
                 {
-                    Id = s.HOPC1ID,
-                    Name = s.HOPC1NAME,
-                    Email = l.EmailID
+                    HOPC1ID = s.HOPC1ID,
+                    HOPC1NAME = s.HOPC1NAME,
+                    emailID = l.EmailID
                 }
             ).ToListAsync();
         }

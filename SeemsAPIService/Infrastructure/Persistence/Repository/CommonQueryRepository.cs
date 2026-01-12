@@ -25,29 +25,29 @@ namespace SeemsAPIService.Infrastructure.Repositories
                    && s.costcenter_status == "Active"
                 select new SalesManagerDto
                 {
-                    Id = s.HOPC1ID,
-                    Name = s.HOPC1NAME,
-                    Email = l.EmailID
+                    id = s.HOPC1ID,
+                    name = s.HOPC1NAME,
+                    emailID = l.EmailID
                 }).ToListAsync();
 
             var generalList = await (
                 from g in _context.general_employee
                 join l in _context.Login on g.IDno equals l.LoginID
                 where g.Functional == "Selling"
-                   && g.JobTitle.Contains("sales")
+                   && g.JobTitle.Contains("Sales")
                    && g.EmpStatus == "Active"
                 select new SalesManagerDto
                 {
-                    Id = g.IDno,
-                    Name = g.Name,
-                    Email = l.EmailID
+                    id = g.IDno,
+                    name = g.Name,
+                    emailID = l.EmailID
                 }).ToListAsync();
 
             return settingList
                 .Concat(generalList)
-                .GroupBy(x => x.Id)
+                .GroupBy(x => x.id)
                 .Select(g => g.First())
-                .OrderBy(x => x.Name)
+                .OrderBy(x => x.name)
                 .ToList();
         }
 
@@ -59,9 +59,9 @@ namespace SeemsAPIService.Infrastructure.Repositories
                 join l in _context.Login on s.IDno equals l.LoginID
                 select new SalesNpiUserDto
                 {
-                    Id = s.IDno,
-                    Name = s.Name,
-                    Email = l.EmailID
+                    iDno = s.IDno,
+                    name = s.Name,
+                    EmailId = l.EmailID
                 }).ToListAsync();
         }
 

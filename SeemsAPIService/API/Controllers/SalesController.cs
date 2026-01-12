@@ -58,14 +58,14 @@ public class SalesController : ControllerBase
     [HttpPost("AddEnquiryData")]
     public async Task<IActionResult> AddEnquiry([FromForm] EnquiryDto dto, IFormFile? file)
     {
-        var result = await _service.CreateEnquiryAsync(dto, file);
+        var result = await _service.AddEnquiryAsync(dto, file);
         return Ok(result);
     }
 
     [HttpPut("EditEnquiryData")]
     public async Task<IActionResult> EditEnquiry([FromForm] EnquiryDto dto, IFormFile? file)
     {
-        await _service.UpdateEnquiryAsync(dto, file);
+        await _service.EditEnquiryAsync(dto, file);
         return Ok(new { message = "Enquiry updated successfully" });
     }
 

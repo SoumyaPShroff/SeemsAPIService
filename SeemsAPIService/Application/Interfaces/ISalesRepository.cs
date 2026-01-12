@@ -10,13 +10,13 @@ namespace SeemsAPIService.Application.Interfaces
         Task<string?> GetCustomerAbbreviationAsync(long customerId);
         Task<dynamic?> GetCustomerByIdAsync(long customerId);
         Task<se_enquiry?> GetEnquiryByNoAsync(string enquiryNo);
-        Task UpdateEnquiryAsync(se_enquiry enquiry);
+        Task EditEnquiryAsync(se_enquiry enquiry);
         Task<List<ViewAllEnquiries>> GetAllEnquiriesAsync(string srId, string status);
         Task<List<object>> GetCustomersAsync();
         Task<List<object>> GetCustomerLocationsAsync(int? customerId);
         Task<List<object>> GetCustomerContactsAsync(int? customerId, int? locationId);
         Task<List<RptViewEnquiryData>> GetRptViewEnquiryDataAsync(string start, string end);
-        Task<List<string>> GetStatesAsync();
+        Task<List<states_ind>> GetStatesAsync();
         Task<List<PendingInvoices>> PendingInvoicesAsync(string costcenter);
         Task<object?> GetEnqCustLocContDataAsync(string enquiryNo);
         Task<List<poenquiries>> GetPoEnquiriesAsync();

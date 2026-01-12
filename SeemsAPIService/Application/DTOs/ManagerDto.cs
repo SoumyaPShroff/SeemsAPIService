@@ -2,8 +2,8 @@
 {
     public class ManagerDto
     {
-        public string Id { get; set; } = "";
-        public string Name { get; set; } = "";
-        public string Email { get; set; } = "";
+        public string HOPC1ID { get; set; } = "";
+        public string HOPC1NAME { get; set; } = "";
+        public string emailID { get; set; } = "";
     }
 }
