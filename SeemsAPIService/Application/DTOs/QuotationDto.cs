@@ -13,7 +13,7 @@ namespace SeemsAPIService.Application.DTOs
         public string tandc { get; set; }
 
         // ===== Line Items =====
-        public List<se_quotation_items> Items { get; set; } = new();
+        public List<QuotationLineItemDto> Items { get; set; } = new();
     }
 
 }

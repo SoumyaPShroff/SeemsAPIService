@@ -1,4 +1,5 @@
-﻿using SeemsAPIService.Domain.Entities;
+﻿using SeemsAPIService.Application.DTOs;
+using SeemsAPIService.Domain.Entities;
 
 namespace SeemsAPIService.Application.Interfaces
 {
@@ -18,20 +19,16 @@ namespace SeemsAPIService.Application.Interfaces
         Task<List<RptViewEnquiryData>> GetRptViewEnquiryDataAsync(string start, string end);
         Task<List<states_ind>> GetStatesAsync();
         Task<List<PendingInvoices>> PendingInvoicesAsync(string costcenter);
-        Task<object?> GetEnqCustLocContDataAsync(string enquiryNo);
         Task<List<poenquiries>> GetPoEnquiriesAsync();
 
-        //        Task<List<se_quotlayout>> GetQuoteBoardDescriptionsAsync();
-        // Task AddQuotationAsync(se_quotation quotation);
-        // Task<object?> GetQuoteDetailsByQuoteNoAsync(string quoteNo);
-        //Task DeleteQuotationDetailAsync(se_quotation detail);
-
-        // for deleting ONE detail row
-        //   Task<se_quotation> GetQuotationDetailByQuoteAsync(string quoteNo);
-
-        // for deleting ALL details
-        // Task<List<se_quotation>> GetQuotationDetailsAsync(string quoteNo);
-        //   Task DeleteQuotationDetailsAsync(List<se_quotation> details);
-        //  Task<int> GetMaxQuoteNumberAsync(int year);
+        // Quotation Related
+        Task<object?> GetEnqCustLocContDataAsync(string enquiryNo);
+        Task<QuotationDto?> GetQuotationDetailsAsync(string quoteNo);
+        Task AddQuotationAsync(se_quotation entity);
+        Task DeleteQuotationAsync(se_quotation detail);
+        Task<int> GetMaxQuoteNumberAsync();
+        Task<List<se_quotlayout>> GetQuoteBoardDescriptionsAsync();
+        Task<object?> GetQuoteDetailsByQuoteNoAsync(string quoteNo);
+       
     }
 }

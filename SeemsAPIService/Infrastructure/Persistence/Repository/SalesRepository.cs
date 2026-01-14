@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SeemsAPIService.Application.DTOs;
 using SeemsAPIService.Application.Interfaces;
 using SeemsAPIService.Domain.Entities;
 using SeemsAPIService.Infrastructure.Persistence;
+using System.Linq;
 
 namespace SeemsAPIService.Infrastructure.Repositories
 {
@@ -20,7 +22,6 @@ namespace SeemsAPIService.Infrastructure.Repositories
             string sql = $"CALL sp_ThreeMonthConfirmedOrderData('{startdate}', '{enddate}')";
             return await _context.ThreeMonthConfirmedOrders.FromSqlRaw(sql).ToListAsync();
         }
-
 
         public async Task AddEnquiryAsync(se_enquiry enquiry)
         {
@@ -65,14 +66,12 @@ namespace SeemsAPIService.Infrastructure.Repositories
             return await _context.ViewAllEnquiries.FromSqlRaw(sql).ToListAsync();
         }
 
- 
         public async Task<List<PendingInvoices>> PendingInvoicesAsync(string costcenter)
         {
             string sql = $"CALL sp_PendingInvoices('{costcenter}')";
             return await _context.PendingInvoices.FromSqlRaw(sql).ToListAsync();
         }
 
- 
         public async Task<string> GetCustomerAbbreviation(long pItemNo)
         {
             var customerAbbrev = await _context.customer
@@ -82,20 +81,7 @@ namespace SeemsAPIService.Infrastructure.Repositories
 
             return customerAbbrev ?? "";
         }
-        //public async Task<List<se_quotlayout>> GetQuoteBoardDescriptionsAsync()
-        //{
-        //    var excludedLayouts = new[]
-        //    {
-        //        "PCB Layout",
-        //        "PCBA",
-        //        "Timing Analysis",
-        //        "PCB Layout at Sienna ECAD"
-        //    };
 
-        //    return await _context.se_quotlayout
-        //        .Where(q => !excludedLayouts.Contains(q.layout))
-        //        .ToListAsync();
-        //}
         public async Task<List<object>> GetCustomersAsync()
         {
             return await _context.customer
@@ -164,13 +150,6 @@ namespace SeemsAPIService.Infrastructure.Repositories
                 .FromSqlRaw(sql)
                 .ToListAsync();
         }
-        //public async Task<List<string>> GetStatesAsync()
-        //{
-        //    return await _context.states_ind
-        //        .OrderBy(s => s.State)
-        //        .Select(s => s.State)
-        //        .ToListAsync();
-        //}
 
         public async Task<List<states_ind>> GetStatesAsync()
         {
@@ -200,61 +179,110 @@ namespace SeemsAPIService.Infrastructure.Repositories
                     Location = sl.location,
                     ContactName = sc.ContactName,
                     Address = sl.address,
-                    enquirytype = e.enquirytype
+                    enquirytype = e.enquirytype,
+                    locationid = e.location_id,
+                    boardref = e.jobnames
                 }
             ).FirstOrDefaultAsync();
         }
-        public async Task AddQuotationAsync(se_quotation quotation)
+        public async Task<List<se_quotlayout>> GetQuoteBoardDescriptionsAsync()
         {
-            await _context.se_quotation.AddAsync(quotation);
+            var excludedLayouts = new[]
+            {
+                "PCB Layout",
+                "PCBA",
+                "Timing Analysis",
+                "PCB Layout at Sienna ECAD"
+            };
+
+            return await _context.se_quotlayout
+                .Where(q => !excludedLayouts.Contains(q.layout))
+                .ToListAsync();
+        }
+
+        public async Task AddQuotationAsync(se_quotation entity)
+        {
+            _context.se_quotation.Add(entity);
+            await _context.SaveChangesAsync();
         }
  
+        public async Task<object?> GetQuoteDetailsByQuoteNoAsync(string quoteNo)
+        {
+            return await (
+                from q in _context.se_quotation
+                join e in _context.se_enquiry on q.enquiryno equals e.enquiryno
+                join c in _context.customer on e.customer_id equals c.itemno
+                join i in _context.se_quotation_items on q.quoteNo equals i.quoteNo into items
+                where q.quoteNo == quoteNo
+                select new
+                {
+                    q.quoteNo,
+                    q.board_ref,
+                    q.createdBy,
+                    q.versionNo,
+                    q.tandc,
+                    items = items.Select(it => new
+                    {
+                        it.slNo,
+                        it.layout,
+                        it.quantity,
+                        it.unit_rate,
+                        it.currency_id,
+                        it.durationtype
+                    }).ToList(),
+                    e.createdOn,
+                    e.status,
+                    e.enquiryno,
+                    c.Customer
+                }
+            ).FirstOrDefaultAsync();
+        }
 
-        // HEADER info
-        //public async Task<object?> GetQuoteDetailsByQuoteNoAsync(string quoteNo)
-        //{
-        //    return await (
-        //        from q in _context.se_quotation
-        //        join e in _context.se_enquiry on q.enquiryno equals e.enquiryno
-        //        join c in _context.customer on e.customer_id equals c.itemno
-        //        where q.quoteNo == quoteNo
-        //        select new
-        //        {
-        //            q.quoteNo,
-        //            e.createdOn,
-        //            e.status,
-        //            e.enquiryno,
-        //            c.Customer
-        //        }
-        //    ).FirstOrDefaultAsync();
-        //}
+        public Task DeleteQuotationAsync(se_quotation detail)
+        {
+            _context.se_quotation.Remove(detail); //header 
+            _context.se_quotation_items.RemoveRange(detail.Items); // details line items
+            return Task.CompletedTask;
+        }
+ 
+        public async Task<int> GetMaxQuoteNumberAsync()
+        {
+            var maxQuoteStr = await _context.se_quotation
+            .Where(q => q.quoteNo != null &&   q.quoteNo != "" &&  q.quoteNo.CompareTo("2032") > 0)
+                .Select(q => q.quoteNo)
+                .MaxAsync();
+            if (int.TryParse(maxQuoteStr, out int maxQuote))
+                return maxQuote;
 
-        // ONE detail by ID
-        //public async Task<se_quotation> GetQuotationDetailByQuoteAsync(string quoteno)
-        //{
-        //    return await _context.se_quotation.FirstOrDefaultAsync(d => d.quoteNo == quoteno);
-        //}
+            return 0;
+        }
+        public async Task<QuotationDto?> GetQuotationDetailsAsync(string quoteNo)
+        {
+            var entity = await _context.se_quotation
+                .Include(q => q.Items)
+                .FirstOrDefaultAsync(q => q.quoteNo == quoteNo);
 
-        //public Task DeleteQuotationDetailAsync(se_quotation detail)
-        //{
-        //    _context.se_quotation.Remove(detail);
-        //    return Task.CompletedTask;
-        //}
+            if (entity == null)
+                return null;
 
-        //public Task DeleteQuotationDetailsAsync(List<se_quotation> details)
-        //{
-        //    _context.se_quotation.RemoveRange(details);
-        //    return Task.CompletedTask;
-        //} 
-
-        //public async Task<int> GetMaxQuoteNumberAsync(int financialYear)
-        //{
-        //    return await _context.se_quotation
-        //        .Where(q => q.quoteNo != null && q.quoteNo.CompareTo("2032") > 0)
-        //        .Select(q => Convert.ToInt32(q.quoteNo))
-        //        .DefaultIfEmpty(0)
-        //        .MaxAsync();
-        //}
-
+            return new QuotationDto
+            {
+                enquiryno = entity.enquiryno,
+                board_ref = entity.board_ref,
+                quoteNo = entity.quoteNo,
+                createdBy = entity.createdBy,
+                versionNo = entity.versionNo,
+                tandc = entity.tandc,
+                Items = entity.Items.Select(i => new QuotationLineItemDto
+                {
+                    slNo = i.slNo,
+                    layout = i.layout,
+                    quantity = i.quantity,
+                    unit_rate = i.unit_rate,
+                    currency_id = i.currency_id,
+                    durationtype = i.durationtype
+                }).ToList()
+            };
+        }
     }
 }

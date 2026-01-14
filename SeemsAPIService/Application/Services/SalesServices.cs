@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using SeemsAPIService.Application.DTOs;
 using SeemsAPIService.Application.Interfaces;
+using SeemsAPIService.Application.Mapper;
 using SeemsAPIService.Domain.Entities;
 
 namespace SeemsAPIService.Application.Services
@@ -13,23 +14,24 @@ namespace SeemsAPIService.Application.Services
         private readonly IReusableService _reusableService;
         private readonly IEmailService _emailService;
         private readonly IEmailRecipientService _recipientService;
+        private readonly IEntityMapper<EnquiryDto, se_enquiry, string?> _enquiryMapper;
+        private readonly IEntityMapper<QuotationDto, se_quotation, string?> _quotationMapper;
 
-        public SalesService(ISalesRepository salesRepository,IReusableService reusableService,IEmailService emailService,IEmailRecipientService recipientService)
+        public SalesService(ISalesRepository salesRepository, IReusableService reusableService,
+            IEmailService emailService, IEmailRecipientService recipientService,
+            IEntityMapper<EnquiryDto, se_enquiry, string?> enquiryMapper,
+            IEntityMapper<QuotationDto, se_quotation, string?> quotationMapper
+            )
         {
             _salesRepository = salesRepository;
             _reusableService = reusableService;
             _emailService = emailService;
             _recipientService = recipientService;
+            _enquiryMapper = enquiryMapper;
+            _quotationMapper = quotationMapper;
         }
 
-        private string GenerateEnquiryNumber()
-        {
-            var year = DateTime.Now.Month <= 3
-                ? DateTime.Now.AddYears(-1).ToString("yy")
-                : DateTime.Now.ToString("yy");
 
-            return $"ENQ{year}{DateTime.Now.Ticks % 10000:0000}";
-        }
         private void ValidateEnquiry(EnquiryDto dto)
         {
             if (dto.customer_id == 0)
@@ -54,21 +56,51 @@ namespace SeemsAPIService.Application.Services
         public async Task<object> AddEnquiryAsync(EnquiryDto enquiry, IFormFile? file)
         {
             ValidateEnquiry(enquiry);
-            // 1️⃣ Generate enquiry number
-            string enquiryNo = GenerateEnquiryNumber();
 
             // 2️⃣ Save file (if any)
             string? savedFilePath = await SaveFileAsync(file);
 
+            enquiry.enquiryno = GenerateEnquiryNumber();
+
+            enquiry.design = DefaultNo(enquiry.design);
+            enquiry.library = DefaultNo(enquiry.library);
+            enquiry.qacam = DefaultNo(enquiry.qacam);
+            enquiry.layout_fab = DefaultNo(enquiry.layout_fab);
+            enquiry.layout_testing = DefaultNo(enquiry.layout_testing);
+            enquiry.dfa = DefaultNo(enquiry.dfa);
+
+            enquiry.si = DefaultNo(enquiry.si);
+            enquiry.pi = DefaultNo(enquiry.pi);
+            enquiry.emi_net_level = DefaultNo(enquiry.emi_net_level);
+            enquiry.emi_system_level = DefaultNo(enquiry.emi_system_level);
+            enquiry.thermal_board_level = DefaultNo(enquiry.thermal_board_level);
+            enquiry.thermal_system_level = DefaultNo(enquiry.thermal_system_level);
+
+            enquiry.npi_fab = DefaultNo(enquiry.npi_fab);
+            enquiry.asmb = DefaultNo(enquiry.asmb);
+            enquiry.npi_testing = DefaultNo(enquiry.npi_testing);
+            enquiry.hardware = DefaultNo(enquiry.hardware);
+            enquiry.software = DefaultNo(enquiry.software);
+            enquiry.fpg = DefaultNo(enquiry.fpg);
+
+            enquiry.NPINew_BOMProc = DefaultNo(enquiry.NPINew_BOMProc);
+            enquiry.NPINew_Fab = DefaultNo(enquiry.NPINew_Fab);
+            enquiry.NPINew_Assbly = DefaultNo(enquiry.NPINew_Assbly);
+            enquiry.NPINew_Testing = DefaultNo(enquiry.NPINew_Testing);
+            enquiry.npinew_jobwork = DefaultNo(enquiry.npinew_jobwork);
+
+            enquiry.govt_tender = DefaultNo(enquiry.govt_tender);
+            enquiry.vaMech = DefaultNo(enquiry.vaMech);
+
             // 3️⃣ Map DTO → Entity  ✅ FIXED
-            var newEnquiry = AddMapToEntity(enquiry, savedFilePath);
+            var newEnquiry = _enquiryMapper.MapForAdd(enquiry,savedFilePath);
 
             // 4️⃣ Save enquiry
             await _salesRepository.AddEnquiryAsync(newEnquiry);
             await _salesRepository.SaveAsync();
 
             // 5️⃣ Trigger email
-           // await SendEnquiryCreatedEmailAsync(newEnquiry, enquiry);
+            await SendEnquiryCreatedEmailAsync(newEnquiry, enquiry);
 
             return new { message = "Enquiry saved successfully", filePath = savedFilePath };
         }
@@ -119,8 +151,7 @@ namespace SeemsAPIService.Application.Services
                 string.Join(";", ccUsers)
             );
         }
-
-        private string BuildEmailBody(
+       private string BuildEmailBody(
             se_enquiry enquiry,
             EnquiryDto dto,
             dynamic customer,
@@ -160,186 +191,7 @@ namespace SeemsAPIService.Application.Services
 
             return Path.Combine("UploadedFiles", uniqueFileName);
         }
-        // Helper method
-        private string DefaultNo(string? value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-                return "NO";
-
-            return value.ToUpper() == "YES" ? "YES" : "NO";
-        }
- 
-        private se_enquiry AddMapToEntity( EnquiryDto dto, string? savedFilePath)
-        {
-            return new se_enquiry
-            {
-                enquiryno = GenerateEnquiryNumber(),
-                customer_id = dto.customer_id,
-                contact_id = dto.contact_id,
-                type = dto.type,
-                salesresponsibilityid = dto.salesresponsibilityid,
-                completeresponsibilityid = dto.completeresponsibilityid,
-                createdBy = dto.createdBy,
-                createdOn = DateTime.Now,
-                uploadedfilename = savedFilePath ?? "",
-                status = "Open",
-                statename = dto.statename ?? "-",
-                currency_id = dto.currency_id,
-                inputreceivedthru = dto.inputreceivedthru,
-                quotation_request_lastdate = dto.quotation_request_lastdate,
-                location_id = dto.location_id,
-
-                // layout
-                design = DefaultNo(dto.design),
-                library = DefaultNo(dto.library),
-                qacam = DefaultNo(dto.qacam),
-                dfm = dto.dfm ?? "",
-                layout_fab = DefaultNo(dto.layout_fab),
-                layout_testing = DefaultNo(dto.layout_testing),
-                layout_others = dto.layout_others ?? "",
-                layoutbyid = dto.layoutbyid ?? "",
-                dfa = DefaultNo(dto.dfa),
-
-                // analysis
-                si = DefaultNo(dto.si),
-                pi = DefaultNo(dto.pi),
-                emi_net_level = DefaultNo(dto.emi_net_level),
-                emi_system_level = DefaultNo(dto.emi_system_level),
-                thermal_board_level = DefaultNo(dto.thermal_board_level),
-                thermal_system_level = DefaultNo(dto.thermal_system_level),
-                analysis_others = dto.analysis_others ?? "",
-                analysisbyid = dto.analysisbyid ?? "",
-
-                // va / npi
-                npi_fab = DefaultNo(dto.npi_fab),
-                asmb = DefaultNo(dto.asmb),
-                npi_testing = DefaultNo(dto.npi_testing),
-                npi_others = DefaultNo(dto.npi_others),
-                hardware = DefaultNo(dto.hardware),
-                software = DefaultNo(dto.software),
-                fpg = DefaultNo(dto.fpg),
-                VA_Assembly = DefaultNo(dto.VA_Assembly),
-                DesignOutSource = DefaultNo(dto.DesignOutSource),
-                npibyid = dto.npibyid ?? "",
-
-                NPINew_BOMProc = DefaultNo(dto.NPINew_BOMProc),
-                NPINew_Fab = DefaultNo(dto.NPINew_Fab),
-                NPINew_Assbly = DefaultNo(dto.NPINew_Assbly),
-                NPINew_Testing = DefaultNo(dto.NPINew_Testing),
-                NPINewbyid = dto.NPINewbyid ?? "",
-                npinew_jobwork = DefaultNo(dto.npinew_jobwork),
-
-                Remarks = dto.Remarks ?? "",
-                enquirytype = dto.enquirytype ?? "",
-                tool = dto.tool ?? "",
-                govt_tender = DefaultNo(dto.govt_tender),
-                jobnames = dto.jobnames ?? "",
-                appendreq = dto.appendreq ?? "",
-                ReferenceBy = dto.ReferenceBy ?? "",
-                tm = dto.tm,
-                vaMech = DefaultNo(dto.vaMech),
-
-                // onsite
-                toolLicense = dto.toolLicense,
-                toolId = dto.toolId,
-                taskId = dto.taskId,
-                expFrom = dto.expFrom,
-                expTo = dto.expTo,
-                noOfResources = dto.noOfResources,
-                tentStartDate = dto.tentStartDate,
-                logistics = dto.logistics,
-                onsiteDurationType = dto.onsiteDurationType,
-                hourlyRateType = dto.hourlyRateType,
-                hourlyReate = dto.hourlyReate,
-                profReqLastDate = dto.profReqLastDate,
-                onsiteDuration = dto.onsiteDuration,
-            };
-        }
-        private void EditMapToEntity(se_enquiry existing, EnquiryDto dto, string? savedFilePath)
-        {
-            existing.customer_id = dto.customer_id;
-            existing.contact_id = dto.contact_id;
-            existing.type = dto.type;
-            existing.statename = dto.statename ?? "-";
-            existing.currency_id = dto.currency_id;
-            existing.inputreceivedthru = dto.inputreceivedthru;
-            existing.salesresponsibilityid = dto.salesresponsibilityid;
-            existing.completeresponsibilityid = dto.completeresponsibilityid;
-            existing.quotation_request_lastdate = dto.quotation_request_lastdate;
-            existing.location_id = dto.location_id;
-
-            // layout
-            existing.design = DefaultNo(dto.design);
-            existing.library = DefaultNo(dto.library);
-            existing.qacam = DefaultNo(dto.qacam);
-            existing.dfm = dto.dfm ?? "";
-            existing.layout_fab = DefaultNo(dto.layout_fab);
-            existing.layout_testing = DefaultNo(dto.layout_testing);
-            existing.layout_others = dto.layout_others ?? "";
-            existing.layoutbyid = dto.layoutbyid ?? "";
-            existing.dfa = DefaultNo(dto.dfa);
-
-            // analysis
-            existing.si = DefaultNo(dto.si);
-            existing.pi = DefaultNo(dto.pi);
-            existing.emi_net_level = DefaultNo(dto.emi_net_level);
-            existing.emi_system_level = DefaultNo(dto.emi_system_level);
-            existing.thermal_board_level = DefaultNo(dto.thermal_board_level);
-            existing.thermal_system_level = DefaultNo(dto.thermal_system_level);
-            existing.analysis_others = dto.analysis_others ?? "";
-            existing.analysisbyid = dto.analysisbyid ?? "";
-
-            // va / npi
-            existing.npi_fab = DefaultNo(dto.npi_fab);
-            existing.asmb = DefaultNo(dto.asmb);
-            existing.npi_testing = DefaultNo(dto.npi_testing);
-            existing.npi_others = dto.npi_others ?? "";
-            existing.hardware = DefaultNo(dto.hardware);
-            existing.software = DefaultNo(dto.software);
-            existing.fpg = DefaultNo(dto.fpg);
-            existing.VA_Assembly = DefaultNo(dto.VA_Assembly);
-            existing.DesignOutSource = DefaultNo(dto.DesignOutSource);
-            existing.npibyid = dto.npibyid ?? "";
-
-            existing.NPINew_BOMProc = DefaultNo(dto.NPINew_BOMProc);
-            existing.NPINew_Fab = DefaultNo(dto.NPINew_Fab);
-            existing.NPINew_Assbly = DefaultNo(dto.NPINew_Assbly);
-            existing.NPINew_Testing = DefaultNo(dto.NPINew_Testing);
-            existing.NPINewbyid = dto.NPINewbyid ?? "";
-            existing.npinew_jobwork = DefaultNo(dto.npinew_jobwork);
-
-            existing.Remarks = dto.Remarks ?? "";
-            existing.enquirytype = dto.enquirytype ?? "";
-            existing.tool = dto.tool ?? "";
-            existing.govt_tender = DefaultNo(dto.govt_tender);
-            existing.jobnames = dto.jobnames ?? "";
-            existing.appendreq = dto.appendreq ?? "";
-            existing.ReferenceBy = dto.ReferenceBy ?? "";
-            existing.tm = dto.tm;
-            existing.vaMech = DefaultNo(dto.vaMech);
-
-            // onsite
-            existing.toolLicense = dto.toolLicense;
-            existing.toolId = dto.toolId;
-            existing.taskId = dto.taskId;
-            existing.expFrom = dto.expFrom;
-            existing.expTo = dto.expTo;
-            existing.noOfResources = dto.noOfResources;
-            existing.tentStartDate = dto.tentStartDate;
-            existing.logistics = dto.logistics;
-            existing.onsiteDurationType = dto.onsiteDurationType;
-            existing.hourlyRateType = dto.hourlyRateType;
-            existing.hourlyReate = dto.hourlyReate;
-            existing.profReqLastDate = dto.profReqLastDate;
-            existing.onsiteDuration = dto.onsiteDuration;
-
-            // file (only if new uploaded)
-            if (!string.IsNullOrEmpty(savedFilePath))
-                existing.uploadedfilename = savedFilePath;
-
-            existing.createdBy = dto.createdBy;
-            existing.createdOn = DateTime.Now;
-        }
+     
         public async Task<object> EditEnquiryAsync(EnquiryDto dto, IFormFile? file)
         {
             ValidateEnquiry(dto);
@@ -353,10 +205,10 @@ namespace SeemsAPIService.Application.Services
             string? savedFilePath = await SaveFileAsync(file);
 
             // 3️⃣ Map DTO → EXISTING entity
-            EditMapToEntity(existing, dto, savedFilePath);
+           _enquiryMapper.MapForEdit(dto,existing, savedFilePath);
 
             // 4️⃣ Save changes
-            await _salesRepository.SaveAsync();
+            await _salesRepository.SaveAsync(); // <-- This is correct, do not assign to var
 
             return new
             {
@@ -365,7 +217,6 @@ namespace SeemsAPIService.Application.Services
                 filePath = savedFilePath
             };
         }
-
 
         public async Task<object> GetEnquiryByNumberAsync(string enquiryNo)
         {
@@ -389,7 +240,7 @@ namespace SeemsAPIService.Application.Services
             // old logic → end + 2 months
             var endPlus2 = endDate.AddMonths(2).ToString("yyyy-MM-dd");
 
-            return await _salesRepository.GetThreeMonthConfirmedOrdersAsync(startDate.ToString("yyyy-MM-dd"),endPlus2);
+            return await _salesRepository.GetThreeMonthConfirmedOrdersAsync(startDate.ToString("yyyy-MM-dd"), endPlus2);
         }
 
         public async Task<object> GetAllEnquiriesAsync(string? salesId, string? status)
@@ -399,7 +250,7 @@ namespace SeemsAPIService.Application.Services
 
             return await _salesRepository.GetAllEnquiriesAsync(srId, stat);
         }
- 
+
         public async Task<object> GetCustomersAsync()
         {
             var customers = await _salesRepository.GetCustomersAsync();
@@ -449,7 +300,7 @@ namespace SeemsAPIService.Application.Services
 
             return data;
         }
- 
+
         public async Task<object> GetCustomerByIdAsync(long customerId)
         {
             var customer = await _salesRepository.GetCustomerByIdAsync(customerId);
@@ -485,90 +336,110 @@ namespace SeemsAPIService.Application.Services
 
             return result;
         }
- 
-
-        Task<object?> ISalesService.GetCustomerAbbreviationAsync(long itemno)
+        public async Task<object?> GetQuoteDetailsByQuoteNoAsync(string quoteNo)
         {
-            throw new NotImplementedException();
+            await _salesRepository.GetQuoteDetailsByQuoteNoAsync(quoteNo);
+            return null;
         }
 
-        //public async Task<object> GetQuoteBoardDescriptionsAsync()
-        //{
-        //    return await _salesRepository.GetQuoteBoardDescriptionsAsync();
-        //}
+        public async Task<List<se_quotlayout>> GetQuoteBoardDescriptionsAsync()
+        {
+            var result = await _salesRepository.GetQuoteBoardDescriptionsAsync();
+            if (result == null)
+                throw new Exception("No data found");
 
-        //private async Task<string> GetNewQuoteNumberAsync()
-        //{
-        //    int year = GetCurrentFinancialYear();
+            return result;
+        }
 
-        //    int maxQuoteNo = await _salesRepository.GetMaxQuoteNumberAsync(year);
+        public async Task<QuotationDto> AddQuotationAsync(QuotationDto dto)
+        {
+            if (dto == null)
+                throw new ArgumentNullException(nameof(dto));
 
-        //    if (maxQuoteNo < (year * 10000))
-        //        return $"{year}0001";
+            if (dto.Items == null || !dto.Items.Any())
+                throw new ArgumentException("Quotation must have at least one item");
 
-        //    return (maxQuoteNo + 1).ToString();
-        //}
+            if (string.IsNullOrWhiteSpace(dto.quoteNo))
+            {
+                int maxQuote = await _salesRepository.GetMaxQuoteNumberAsync();
+                dto.quoteNo = (maxQuote + 1).ToString();
+                dto.versionNo ??= "1";
+            }
+            var entity = _quotationMapper.MapForAdd(dto, null);
+            await _salesRepository.AddQuotationAsync(entity);
+            await _salesRepository.SaveAsync();
 
-        //public async Task<object> AddQuotationAsync(QuotationDto dto)
-        //{
-        //    // 1️⃣ Generate quotation number
-        //    string quoteNo = await GetNewQuoteNumberAsync();
+            return dto;
+        }
 
-        //    // 2️⃣ Map DTO → Entity
-        //    var quotation = new se_quotation
-        //    {
-        //        quoteno = quoteNo,
-        //        enquiryno = dto.enquiryno,
-        //        customer_id = dto.customer_id,
-        //        createdBy = dto.createdBy,
-        //        createdOn = DateTime.Now,
-        //        status = "Open"
-        //    };
+        public async Task<object> DeleteQuotationAsync(string quoteno)
+        {
+            // get quotation WITH items
+            var quotation = await _salesRepository.GetQuotationDetailsAsync(quoteno);
+            if (quotation == null)
+                throw new Exception("Quotation not found");
 
-        //    // 3️⃣ Save
-        //    await _salesRepository.AddQuotationAsync(quotation);
-        //    await _salesRepository.SaveAsync();
+            // map dto → entity
+            var entity = new se_quotation
+            {
+                quoteNo = quotation.quoteNo,
+                Items = quotation.Items.Select(i => new se_quotation_items
+                {
+                    slNo = i.slNo
+                }).ToList()
+            };
 
-        //    return new
-        //    {
-        //        message = "Quotation created successfully",
-        //        quoteno = quoteNo
-        //    };
-        //}
-        //public async Task<object> GetQuoteDetailsByQuoteNoAsync(string quoteNo)
-        //{
-        //    var result = await _salesRepository.GetQuoteDetailsByQuoteNoAsync(quoteNo);
+            await _salesRepository.DeleteQuotationAsync(entity);
+            await _salesRepository.SaveAsync();
 
-        //    if (result == null)
-        //        throw new Exception("Quotation not found");
+            return new { message = "Quotation deleted successfully" };
+        }
+        public async Task<QuotationDto?> GetQuotationDetailsAsync(string quoteNo)
+        {
+            if (string.IsNullOrWhiteSpace(quoteNo))
+                throw new ArgumentException("Quote number is required");
 
-        //    return result;
-        //}
-        //public async Task<object> DeleteQuotationDetailAsync(string quoteno)
-        //{
-        //    var detail = await _salesRepository.GetQuotationDetailByQuoteAsync(quoteno);
+            var result = await _salesRepository.GetQuotationDetailsAsync(quoteNo);
 
-        //    if (detail == null)
-        //        throw new Exception("Quotation detail not found");
+            if (result == null)
+                throw new Exception("Quotation not found");
 
-        //    await _salesRepository.DeleteQuotationDetailAsync(detail);
-        //    await _salesRepository.SaveAsync();
+            return result;
+        }
 
-        //    return new { message = "Quotation detail deleted successfully" };
-        //}
-        //public async Task<object> DeleteAllQuotationDetailsAsync(string quoteNo)
-        //{
-        //    var details = await _salesRepository.GetQuotationDetailsAsync(quoteNo);
-
-        //    if (!details.Any())
-        //        throw new Exception("No quotation details found");
-
-        //    await _salesRepository.DeleteQuotationDetailsAsync(details);
-        //    await _salesRepository.SaveAsync();
-
-        //    return new { message = "All quotation details deleted successfully" };
-        //}
+        public async Task<int> GetMaxQuoteNumberAsync()
+        {
+            return await _salesRepository.GetMaxQuoteNumberAsync();
+        }
 
 
+        public async Task<object?> GetCustomerAbbreviationAsync(long customerId)
+        {
+            if (customerId <= 0)
+                throw new ArgumentException("Invalid customer id");
+
+            var result = await _salesRepository.GetCustomerAbbreviationAsync(customerId);
+
+            if (string.IsNullOrWhiteSpace(result))
+                return null;
+
+            return result;
+        }
+        private string GenerateEnquiryNumber()
+        {
+            var year = DateTime.Now.Month <= 3
+                ? DateTime.Now.AddYears(-1).ToString("yy")
+                : DateTime.Now.ToString("yy");
+
+            return $"ENQ{year}{DateTime.Now.Ticks % 10000:0000}";
+        }
+
+        private string DefaultNo(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return "NO";
+
+            return value.ToUpper() == "YES" ? "YES" : "NO";
+        }
     }
 }

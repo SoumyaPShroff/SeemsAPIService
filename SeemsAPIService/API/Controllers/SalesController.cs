@@ -17,7 +17,6 @@ public class SalesController : ControllerBase
         _reportservice = repservice;
     }
 
-
     [HttpGet("ThreeMonthConfirmedOrders/{startdate}/{enddate}")]
     public async Task<IActionResult> ThreeMonthConfirmedOrders(string startdate, string enddate)
     {
@@ -54,7 +53,6 @@ public class SalesController : ControllerBase
         return Ok(data);
     }
 
-
     [HttpPost("AddEnquiryData")]
     public async Task<IActionResult> AddEnquiry([FromForm] EnquiryDto dto, IFormFile? file)
     {
@@ -76,113 +74,112 @@ public class SalesController : ControllerBase
         return Ok(data);
 
     }
-        [HttpGet("AllEnquiries")]
-        public async Task<IActionResult> AllEnquiries([FromQuery] string? salesResponsibilityId, [FromQuery] string? status)
-        {
-            var result = await _service.GetAllEnquiriesAsync(salesResponsibilityId, status);
-            return Ok(result);
-        }
 
-        [HttpGet("Customers")]
-        public async Task<IActionResult> Customers()
-        {
-            var result = await _service.GetCustomersAsync();
-            return Ok(result);
-        }
+    [HttpGet("AllEnquiries")]
+    public async Task<IActionResult> AllEnquiries([FromQuery] string? salesResponsibilityId, [FromQuery] string? status)
+    {
+        var result = await _service.GetAllEnquiriesAsync(salesResponsibilityId, status);
+        return Ok(result);
+    }
 
-        [HttpGet("customerlocations")]
-        public async Task<IActionResult> CustomerLocations([FromQuery] int? customerId)
-        {
-            var result = await _service.GetCustomerLocationsAsync(customerId);
-            return Ok(result);
-        }
+    [HttpGet("Customers")]
+    public async Task<IActionResult> Customers()
+    {
+        var result = await _service.GetCustomersAsync();
+        return Ok(result);
+    }
 
-        [HttpGet("customercontacts")]
-        public async Task<IActionResult> CustomerContacts([FromQuery] int? customerId, [FromQuery] int? locationId)
-        {
-            var result = await _service.GetCustomerContactsAsync(customerId, locationId);
-            return Ok(result);
-        }
+    [HttpGet("customerlocations")]
+    public async Task<IActionResult> CustomerLocations([FromQuery] int? customerId)
+    {
+        var result = await _service.GetCustomerLocationsAsync(customerId);
+        return Ok(result);
+    }
 
-        [HttpGet("customerabbreviation")]
-        public async Task<IActionResult> GetCustomerAbbreviation([FromQuery] long? itemno)
-        {
-            var result = await _service.GetCustomerAbbreviationAsync(itemno.Value);
-            if (result == null)
-                return NotFound("No customer abbreviation found.");
+    [HttpGet("customercontacts")]
+    public async Task<IActionResult> CustomerContacts([FromQuery] int? customerId, [FromQuery] int? locationId)
+    {
+        var result = await _service.GetCustomerContactsAsync(customerId, locationId);
+        return Ok(result);
+    }
 
-            return Ok(result);
-        }
+    [HttpGet("customerabbreviation")]
+    public async Task<IActionResult> GetCustomerAbbreviation([FromQuery] long? itemno)
+    {
+        var result = await _service.GetCustomerAbbreviationAsync(itemno.Value);
+        if (result == null)
+            return NotFound("No customer abbreviation found.");
 
+        return Ok(result);
+    }
 
-        [HttpGet("RptViewEnquiryData/{startdate}/{enddate}")]
-        public async Task<IActionResult> RptViewEnquiryData(string startdate, string enddate)
-        {
-            var result = await _service.GetRptViewEnquiryDataAsync(startdate, enddate);
-            return Ok(result);
-        }
+    [HttpGet("RptViewEnquiryData/{startdate}/{enddate}")]
+    public async Task<IActionResult> RptViewEnquiryData(string startdate, string enddate)
+    {
+        var result = await _service.GetRptViewEnquiryDataAsync(startdate, enddate);
+        return Ok(result);
+    }
 
-        [HttpGet("States")]
-        public async Task<IActionResult> States()
-        {
-            var result = await _service.GetStatesAsync();
-            return Ok(result);
-        }
+    [HttpGet("States")]
+    public async Task<IActionResult> States()
+    {
+        var result = await _service.GetStatesAsync();
+        return Ok(result);
+    }
 
-        [HttpGet("poenquiries")]
-        public async Task<IActionResult> PoEnquiries()
-        {
-            var result = await _service.GetPoEnquiriesAsync();
-            return Ok(result);
-        }
+    [HttpGet("poenquiries")]
+    public async Task<IActionResult> PoEnquiries()
+    {
+        var result = await _service.GetPoEnquiriesAsync();
+        return Ok(result);
+    }
 
-        [HttpGet("CustomerById")]
-        public async Task<IActionResult> CustomerById([FromQuery] long itemno)
-        {
-            var result = await _service.GetCustomerByIdAsync(itemno);
-            return Ok(result);
-        }
+    [HttpGet("CustomerById")]
+    public async Task<IActionResult> CustomerById([FromQuery] long itemno)
+    {
+        var result = await _service.GetCustomerByIdAsync(itemno);
+        return Ok(result);
+    }
 
-        [HttpGet("EnqCustLocContData")]
-        public async Task<IActionResult> EnqCustLocContData([FromQuery] string penquiryno)
-        {
-            var result = await _service.GetEnqCustLocContDataAsync(penquiryno);
-            return Ok(result);
-        }
-   
-        [HttpGet("PendingInvoices/{costcenter}")]
-        public async Task<IActionResult> PendingInvoices(string costcenter)
-        {
-            var result = await _service.PendingInvoicesAsync(costcenter);
-            return Ok(result);
-        }
+    [HttpGet("EnqCustLocContData")]
+    public async Task<IActionResult> EnqCustLocContData([FromQuery] string penquiryno)
+    {
+        var result = await _service.GetEnqCustLocContDataAsync(penquiryno);
+        return Ok(result);
+    }
 
-    //[HttpPost("AddQuotation")]
-    //public async Task<IActionResult> AddQuotation([FromBody] QuotationDto dto)
-    //{
-    //    var result = await _service.AddQuotationAsync(dto);
-    //    return Ok(result);
-    //}
-    //}
+    [HttpGet("PendingInvoices/{costcenter}")]
+    public async Task<IActionResult> PendingInvoices(string costcenter)
+    {
+        var result = await _service.PendingInvoicesAsync(costcenter);
+        return Ok(result);
+    }
 
-    //[HttpGet("QuoteBoardDescriptions")]
-    //public async Task<IActionResult> QuoteBoardDescriptions()
-    //{
-    //    var result = await _service.GetQuoteBoardDescriptionsAsync();
-    //    return Ok(result);
-    //}
+    [HttpGet("QuotationDetails")]
+    public async Task<IActionResult> GetQuotationDetailsAsync([FromQuery] string quoteno)
+    {
+        var result = await _service.GetQuotationDetailsAsync(quoteno);
+        return Ok(result);
+    }
 
-    //[HttpGet("QuoteDetailsByQuoteNo")]
-    //public async Task<IActionResult> QuoteDetailsByQuoteNo([FromQuery] string quoteno)
-    //{
-    //    var result = await _service.GetQuoteDetailsByQuoteNoAsync(quoteno);
-    //    return Ok(result);
-    //}
+    [HttpPost("AddQuotation")]
+    public async Task<IActionResult> AddQuotation([FromBody] QuotationDto dto)
+    {
+        var result = await _service.AddQuotationAsync(dto);
+        return Ok(result);
+    }
 
-    //[HttpDelete("DeleteAllQuotationDetails")]
-    //public async Task<IActionResult> DeleteAllQuotationDetails([FromQuery] string quoteno)
-    //{
-    //    var result = await _service.DeleteAllQuotationDetailsAsync(quoteno);
-    //    return Ok(result);
-    //}
+    [HttpDelete("DeleteQuote")]
+    public async Task<IActionResult> DeleteQuote([FromQuery] string quoteno)
+    {
+        var result = await _service.DeleteQuotationAsync(quoteno);
+        return Ok(result);
+    }
+
+    [HttpGet("QuoteBoardDescriptions")]
+    public async Task<IActionResult> QuoteBoardDescriptions()
+    {
+        var result = await _service.GetQuoteBoardDescriptionsAsync();
+        return Ok(result);
+    }
 }

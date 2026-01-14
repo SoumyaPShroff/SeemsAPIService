@@ -129,5 +129,19 @@ namespace SeemsAPIService.Infrastructure.Persistence
                 ConfirmedOrders = confirmedOrders
             };
         }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<se_quotation>()
+                .HasMany(q => q.Items)
+                .WithOne(i => i.Quotation)
+                .HasForeignKey(i => i.quoteNo)
+                .HasPrincipalKey(q => q.quoteNo);
+
+            modelBuilder.Entity<se_quotation_items>()
+            .HasKey(x => new { x.quoteNo, x.slNo });
+        }
+
     }
 }

@@ -1,11 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using SeemsAPIService.Application.DTOs;
 using SeemsAPIService.Application.Interfaces;
+using SeemsAPIService.Application.Mapper;
 using SeemsAPIService.Application.Services;
+using SeemsAPIService.Domain.Entities;
 using SeemsAPIService.Infrastructure.ExternalServices;
 using SeemsAPIService.Infrastructure.Persistence;
 using SeemsAPIService.Infrastructure.Persistence.Repository;
 using SeemsAPIService.Infrastructure.Repositories;
-
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,27 +24,26 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IUserQueryService, UserQueryService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IEmailRecipientService, EmailRecipientService>();
-
-builder.Services.AddScoped<IJobService, JobService>();
-builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<IUserAccessService, UserAccessService>();
-builder.Services.AddScoped<IUserAccessRepository, UserAccessRepository>();
-builder.Services.AddScoped<IUserQueryService, UserQueryService>();
-builder.Services.AddScoped<IUserQueryRepository, UserQueryRepository>();
+builder.Services.AddScoped<IJobService, JobService>();
 builder.Services.AddScoped<ICommonQueryService, CommonQueryService>();
-builder.Services.AddScoped<ICommonQueryRepository, CommonQueryRepository>();
-
 builder.Services.AddScoped<ISalesService, SalesService>();                           // Sales service dependency injection
-//builder.Services.AddScoped<IQuotationService, QuotationService>();                  // Quotation service dependency injection
-builder.Services.AddScoped<IReusableService, ReusableService>();                     // Application service dependency injection
+builder.Services.AddScoped<IReusableService, ReusableService>();
+builder.Services.AddScoped<IReportService, ReportService>();
+
+builder.Services.AddScoped<IUserQueryRepository, UserQueryRepository>();
+builder.Services.AddScoped<ICommonQueryRepository, CommonQueryRepository>();
 builder.Services.AddScoped<IReusableRepository, ReusableRepository>();               // Repository dependency injection
 builder.Services.AddScoped<ISalesRepository, SalesRepository>();
-builder.Services.AddScoped<ISalesService, SalesService>();
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
-builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IJobRepository, JobRepository>();
+builder.Services.AddScoped<IUserAccessRepository, UserAccessRepository>();
+builder.Services.AddScoped<IEntityMapper<EnquiryDto, se_enquiry, string?>, EnquiryMapper>(); //mapper dependency injection
+builder.Services.AddScoped<IEntityMapper<QuotationDto, se_quotation, string?>, QuotationMapper>();
 
 builder.Services.AddCors(options =>
 {

@@ -78,5 +78,6 @@
         public DateTime profReqLastDate { get; set; }
 
         public long onsiteDuration { get; set; }
+
     }
 }
