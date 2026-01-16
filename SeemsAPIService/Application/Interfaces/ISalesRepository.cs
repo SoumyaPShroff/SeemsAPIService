@@ -28,7 +28,7 @@ namespace SeemsAPIService.Application.Interfaces
         Task DeleteQuotationAsync(se_quotation detail);
         Task<int> GetMaxQuoteNumberAsync();
         Task<List<se_quotlayout>> GetQuoteBoardDescriptionsAsync();
-        Task<object?> GetQuoteDetailsByQuoteNoAsync(string quoteNo);
+        Task<object?> GetQuoteDetailsByEnqQuoteNoAsync(string enquiryNo,string quoteNo);
        
     }
 }

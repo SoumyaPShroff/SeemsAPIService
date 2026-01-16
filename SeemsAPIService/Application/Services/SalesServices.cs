@@ -336,10 +336,10 @@ namespace SeemsAPIService.Application.Services
 
             return result;
         }
-        public async Task<object?> GetQuoteDetailsByQuoteNoAsync(string quoteNo)
+        public async Task<object?> GetQuoteDetailsByEnqQuoteNoAsync(string enquiryNo,string quoteNo)
         {
-            await _salesRepository.GetQuoteDetailsByQuoteNoAsync(quoteNo);
-            return null;
+           var result =  await _salesRepository.GetQuoteDetailsByEnqQuoteNoAsync(enquiryNo,quoteNo);
+            return result;
         }
 
         public async Task<List<se_quotlayout>> GetQuoteBoardDescriptionsAsync()
@@ -363,7 +363,11 @@ namespace SeemsAPIService.Application.Services
             {
                 int maxQuote = await _salesRepository.GetMaxQuoteNumberAsync();
                 dto.quoteNo = (maxQuote + 1).ToString();
-                dto.versionNo ??= "1";
+                if (dto.versionNo == null)
+                {
+                    dto.versionNo = 1;
+                }
+               // dto.versionNo ??= 1;
             }
             var entity = _quotationMapper.MapForAdd(dto, null);
             await _salesRepository.AddQuotationAsync(entity);

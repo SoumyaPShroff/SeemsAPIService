@@ -9,7 +9,7 @@ namespace SeemsAPIService.Domain.Entities
         public string enquiryno { get; set; }
         public string board_ref { get; set; }
         public string createdBy { get; set; }
-        public string versionNo { get; set; }
+        public int versionNo { get; set; }
         public string tandc { get; set; }
 
         // Navigation

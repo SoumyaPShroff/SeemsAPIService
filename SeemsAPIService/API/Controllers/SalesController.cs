@@ -155,8 +155,19 @@ public class SalesController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("QuotationDetails")]
-    public async Task<IActionResult> GetQuotationDetailsAsync([FromQuery] string quoteno)
+    [HttpGet("QuotationDetailsByEnqQuote/{enquiryNo}")]
+    public async Task<IActionResult> GetQuoteDetailsByEnqQuoteNoAsync(string enquiryNo, [FromQuery] string? quoteNo = null)  // quoteNo optional via query string
+    {
+        var result = await _service.GetQuoteDetailsByEnqQuoteNoAsync(enquiryNo, quoteNo);
+
+        if (result == null)
+            return NotFound("Quotation not found");
+
+        return Ok(result);
+    }
+
+    [HttpGet("QuotationDetailsByQuote/{quoteno}")]
+    public async Task<IActionResult> GetQuotationDetailsAsync( [FromRoute] string quoteno)
     {
         var result = await _service.GetQuotationDetailsAsync(quoteno);
         return Ok(result);

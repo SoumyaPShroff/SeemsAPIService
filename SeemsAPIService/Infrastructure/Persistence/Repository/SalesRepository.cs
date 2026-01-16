@@ -5,6 +5,7 @@ using SeemsAPIService.Application.Interfaces;
 using SeemsAPIService.Domain.Entities;
 using SeemsAPIService.Infrastructure.Persistence;
 using System.Linq;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SeemsAPIService.Infrastructure.Repositories
 {
@@ -205,15 +206,24 @@ namespace SeemsAPIService.Infrastructure.Repositories
             _context.se_quotation.Add(entity);
             await _context.SaveChangesAsync();
         }
- 
-        public async Task<object?> GetQuoteDetailsByQuoteNoAsync(string quoteNo)
+        public async Task<object?> GetQuoteDetailsByEnqQuoteNoAsync(string enquiryNo, string? quoteNo)
         {
-            return await (
+            var query =
                 from q in _context.se_quotation
-                join e in _context.se_enquiry on q.enquiryno equals e.enquiryno
-                join c in _context.customer on e.customer_id equals c.itemno
-                join i in _context.se_quotation_items on q.quoteNo equals i.quoteNo into items
-                where q.quoteNo == quoteNo
+                where q.enquiryno == enquiryNo
+                      && (quoteNo == null || q.quoteNo == quoteNo) // ✅ optional filter
+
+                join e in _context.se_enquiry
+                    on q.enquiryno equals e.enquiryno into eq
+                from e in eq.DefaultIfEmpty()   // LEFT JOIN
+
+                join c in _context.customer
+                    on e.customer_id equals c.itemno into ec
+                from c in ec.DefaultIfEmpty()   // LEFT JOIN
+
+                join i in _context.se_quotation_items
+                    on q.quoteNo equals i.quoteNo into items
+
                 select new
                 {
                     q.quoteNo,
@@ -221,6 +231,7 @@ namespace SeemsAPIService.Infrastructure.Repositories
                     q.createdBy,
                     q.versionNo,
                     q.tandc,
+
                     items = items.Select(it => new
                     {
                         it.slNo,
@@ -230,13 +241,20 @@ namespace SeemsAPIService.Infrastructure.Repositories
                         it.currency_id,
                         it.durationtype
                     }).ToList(),
-                    e.createdOn,
-                    e.status,
-                    e.enquiryno,
-                    c.Customer
-                }
-            ).FirstOrDefaultAsync();
+
+                    createdOn = e != null ? e.createdOn : (DateTime?)null,
+                    status = e != null ? e.status : null,
+                    enquiryno = e != null ? e.enquiryno : q.enquiryno,
+                    Customer = c != null ? c.Customer : null
+                };
+
+            if (quoteNo != null)
+                return await query.FirstOrDefaultAsync(); // single quote for editing
+            else
+                return await query.ToListAsync();        // all quotes for listing
         }
+
+
 
         public Task DeleteQuotationAsync(se_quotation detail)
         {

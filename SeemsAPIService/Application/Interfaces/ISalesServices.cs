@@ -20,11 +20,11 @@ namespace SeemsAPIService.Application.Interfaces
         Task<object> GetCustomerByIdAsync(long customerId);
         Task<object> GetEnqCustLocContDataAsync(string enquiryNo);
         Task<object?> GetCustomerAbbreviationAsync(long itemno);
-        Task<QuotationDto?> GetQuotationDetailsAsync(string quoteNo);
+        Task<object?> GetQuoteDetailsByEnqQuoteNoAsync(string enquiryNo,string quoteNo);
         Task<QuotationDto> AddQuotationAsync(QuotationDto dto);
         Task<object> DeleteQuotationAsync(string quoteNo);
         Task<int> GetMaxQuoteNumberAsync();
-        // Task<se_quotlayout> GetQuoteBoardDescriptionsAsync();
+        Task<QuotationDto> GetQuotationDetailsAsync(string quoteNo);
         Task<List<se_quotlayout>> GetQuoteBoardDescriptionsAsync();
 
     }
