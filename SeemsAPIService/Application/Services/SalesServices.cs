@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using SeemsAPIService.Application.DTOs;
 using SeemsAPIService.Application.Interfaces;
 using SeemsAPIService.Application.Mapper;
+using SeemsAPIService.Application.Mapper.SeemsAPIService.Application.Mapper;
 using SeemsAPIService.Domain.Entities;
 
 namespace SeemsAPIService.Application.Services
@@ -351,30 +352,76 @@ namespace SeemsAPIService.Application.Services
             return result;
         }
 
+
+        //public async Task<QuotationDto> AddQuotationAsync(QuotationDto dto)
+        //{
+        //    if (dto == null) throw new ArgumentNullException(nameof(dto));
+        //    if (dto.Items == null || !dto.Items.Any())
+        //        throw new ArgumentException("Quotation must have at least one item");
+
+        //    se_quotation existingQuote = null;
+        //    if (!string.IsNullOrWhiteSpace(dto.quoteNo))
+        //    {
+        //        existingQuote = await _salesRepository.GetQuotationDetailsAsync(dto.quoteNo);
+        //    }
+
+        //    if (existingQuote != null)
+        //    {
+        //        // Mapper handles deletion & update
+        //        _quotationMapper.MapForEdit(dto, existingQuote, null);
+
+        //        await _salesRepository.EditQuotationAsync(existingQuote);
+        //        await _salesRepository.SaveAsync();
+        //    }
+        //    else
+        //    {
+        //        var entity = _quotationMapper.MapForAdd(dto, null);
+        //        await _salesRepository.AddQuotationAsync(entity);
+        //        await _salesRepository.SaveAsync();
+        //    }
+
+        //    return dto; // or map back from entity
+        //}
         public async Task<QuotationDto> AddQuotationAsync(QuotationDto dto)
         {
-            if (dto == null)
-                throw new ArgumentNullException(nameof(dto));
-
-            if (dto.Items == null || !dto.Items.Any())
-                throw new ArgumentException("Quotation must have at least one item");
-
             if (string.IsNullOrWhiteSpace(dto.quoteNo))
             {
                 int maxQuote = await _salesRepository.GetMaxQuoteNumberAsync();
                 dto.quoteNo = (maxQuote + 1).ToString();
-                if (dto.versionNo == null)
-                {
-                    dto.versionNo = 1;
-                }
-               // dto.versionNo ??= 1;
+                dto.versionNo = dto.versionNo == 0 ? 1 : dto.versionNo;
             }
+
             var entity = _quotationMapper.MapForAdd(dto, null);
             await _salesRepository.AddQuotationAsync(entity);
             await _salesRepository.SaveAsync();
 
+            // ✅ dto now contains generated quoteNo
             return dto;
         }
+
+        public async Task<QuotationDto> EditQuotationAsync(QuotationDto dto)
+        {
+            if (dto == null)
+                throw new ArgumentNullException(nameof(dto));
+
+            if (string.IsNullOrWhiteSpace(dto.quoteNo))
+                throw new ArgumentException("QuoteNo is required for edit");
+
+            var existingQuote = await _salesRepository
+                .GetQuotationDetailsAsync(dto.quoteNo);
+
+            if (existingQuote == null)
+                throw new InvalidOperationException($"Quotation {dto.quoteNo} not found");
+
+            // Mapper handles update + delete + add items
+            _quotationMapper.MapForEdit(dto, existingQuote, null);
+
+            await _salesRepository.EditQuotationAsync(existingQuote);
+            await _salesRepository.SaveAsync();
+
+            return dto; // or map from existingQuote
+        }
+
 
         public async Task<object> DeleteQuotationAsync(string quoteno)
         {
@@ -398,7 +445,7 @@ namespace SeemsAPIService.Application.Services
 
             return new { message = "Quotation deleted successfully" };
         }
-        public async Task<QuotationDto?> GetQuotationDetailsAsync(string quoteNo)
+        public async Task<se_quotation?> GetQuotationDetailsAsync(string quoteNo)
         {
             if (string.IsNullOrWhiteSpace(quoteNo))
                 throw new ArgumentException("Quote number is required");

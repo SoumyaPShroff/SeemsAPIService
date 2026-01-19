@@ -9,7 +9,7 @@ namespace SeemsAPIService.Domain.Entities
         [Key]   // ✅ REQUIRED
        // [DatabaseGenerated(DatabaseGeneratedOption.Identity)] - auto increment
         public int slNo { get; set; }
-        public string quoteNo { get; set; } //FK
+        public string quoteNo { get; set; }  // 🔴 FK (NOT NULL)
 
         [ForeignKey(nameof(quoteNo))]
         public se_quotation Quotation { get; set; } // navigation

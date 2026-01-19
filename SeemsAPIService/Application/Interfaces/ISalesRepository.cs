@@ -23,8 +23,10 @@ namespace SeemsAPIService.Application.Interfaces
 
         // Quotation Related
         Task<object?> GetEnqCustLocContDataAsync(string enquiryNo);
-        Task<QuotationDto?> GetQuotationDetailsAsync(string quoteNo);
+        // Task<QuotationDto?> GetQuotationDetailsAsync(string quoteNo);
+        Task<se_quotation> GetQuotationDetailsAsync(string quoteNo);
         Task AddQuotationAsync(se_quotation entity);
+        Task EditQuotationAsync(se_quotation entity);
         Task DeleteQuotationAsync(se_quotation detail);
         Task<int> GetMaxQuoteNumberAsync();
         Task<List<se_quotlayout>> GetQuoteBoardDescriptionsAsync();

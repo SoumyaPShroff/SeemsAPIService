@@ -22,9 +22,12 @@ namespace SeemsAPIService.Application.Interfaces
         Task<object?> GetCustomerAbbreviationAsync(long itemno);
         Task<object?> GetQuoteDetailsByEnqQuoteNoAsync(string enquiryNo,string quoteNo);
         Task<QuotationDto> AddQuotationAsync(QuotationDto dto);
+
+        Task<QuotationDto> EditQuotationAsync(QuotationDto dto);
         Task<object> DeleteQuotationAsync(string quoteNo);
         Task<int> GetMaxQuoteNumberAsync();
-        Task<QuotationDto> GetQuotationDetailsAsync(string quoteNo);
+        //  Task<QuotationDto> GetQuotationDetailsAsync(string quoteNo);
+        Task<se_quotation> GetQuotationDetailsAsync(string quoteNo);
         Task<List<se_quotlayout>> GetQuoteBoardDescriptionsAsync();
 
     }

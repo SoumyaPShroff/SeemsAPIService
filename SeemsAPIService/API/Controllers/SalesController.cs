@@ -180,6 +180,13 @@ public class SalesController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("EditQuotation")]
+    public async Task<IActionResult> EditQuotation([FromBody] QuotationDto dto)
+    {
+        var result = await _service.EditQuotationAsync(dto);
+        return Ok(result);
+    }
+
     [HttpDelete("DeleteQuote")]
     public async Task<IActionResult> DeleteQuote([FromQuery] string quoteno)
     {

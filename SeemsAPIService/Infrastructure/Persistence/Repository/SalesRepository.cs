@@ -206,6 +206,11 @@ namespace SeemsAPIService.Infrastructure.Repositories
             _context.se_quotation.Add(entity);
             await _context.SaveChangesAsync();
         }
+        public async Task EditQuotationAsync(se_quotation entity)
+        {
+            _context.se_quotation.Update(entity);
+            await _context.SaveChangesAsync();
+        }
         public async Task<object?> GetQuoteDetailsByEnqQuoteNoAsync(string enquiryNo, string? quoteNo)
         {
             var query =
@@ -254,19 +259,17 @@ namespace SeemsAPIService.Infrastructure.Repositories
                 return await query.ToListAsync();        // all quotes for listing
         }
 
-
-
         public Task DeleteQuotationAsync(se_quotation detail)
         {
             _context.se_quotation.Remove(detail); //header 
             _context.se_quotation_items.RemoveRange(detail.Items); // details line items
             return Task.CompletedTask;
         }
- 
+
         public async Task<int> GetMaxQuoteNumberAsync()
         {
             var maxQuoteStr = await _context.se_quotation
-            .Where(q => q.quoteNo != null &&   q.quoteNo != "" &&  q.quoteNo.CompareTo("2032") > 0)
+            .Where(q => q.quoteNo != null && q.quoteNo != "" && q.quoteNo.CompareTo("2032") > 0)
                 .Select(q => q.quoteNo)
                 .MaxAsync();
             if (int.TryParse(maxQuoteStr, out int maxQuote))
@@ -274,33 +277,39 @@ namespace SeemsAPIService.Infrastructure.Repositories
 
             return 0;
         }
-        public async Task<QuotationDto?> GetQuotationDetailsAsync(string quoteNo)
+        //public async Task<QuotationDto?> GetQuotationDetailsAsync(string quoteNo)
+        //{
+        //    var entity = await _context.se_quotation
+        //        .Include(q => q.Items)
+        //        .FirstOrDefaultAsync(q => q.quoteNo == quoteNo);
+
+        //    if (entity == null)
+        //        return null;
+
+        //    return new QuotationDto
+        //    {
+        //        enquiryno = entity.enquiryno,
+        //        board_ref = entity.board_ref,
+        //        quoteNo = entity.quoteNo,
+        //        createdBy = entity.createdBy,
+        //        versionNo = entity.versionNo,
+        //        tandc = entity.tandc,
+        //        Items = entity.Items.Select(i => new QuotationLineItemDto
+        //        {
+        //            slNo = i.slNo,
+        //            layout = i.layout,
+        //            quantity = i.quantity,
+        //            unit_rate = i.unit_rate,
+        //            currency_id = i.currency_id,
+        //            durationtype = i.durationtype
+        //        }).ToList()
+        //    };
+        //}
+        public async Task<se_quotation?> GetQuotationDetailsAsync(string quoteNo)
         {
-            var entity = await _context.se_quotation
+            return await _context.se_quotation
                 .Include(q => q.Items)
                 .FirstOrDefaultAsync(q => q.quoteNo == quoteNo);
-
-            if (entity == null)
-                return null;
-
-            return new QuotationDto
-            {
-                enquiryno = entity.enquiryno,
-                board_ref = entity.board_ref,
-                quoteNo = entity.quoteNo,
-                createdBy = entity.createdBy,
-                versionNo = entity.versionNo,
-                tandc = entity.tandc,
-                Items = entity.Items.Select(i => new QuotationLineItemDto
-                {
-                    slNo = i.slNo,
-                    layout = i.layout,
-                    quantity = i.quantity,
-                    unit_rate = i.unit_rate,
-                    currency_id = i.currency_id,
-                    durationtype = i.durationtype
-                }).ToList()
-            };
         }
     }
 }

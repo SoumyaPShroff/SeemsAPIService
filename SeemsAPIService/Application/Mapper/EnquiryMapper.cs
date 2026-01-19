@@ -1,9 +1,10 @@
 ﻿using SeemsAPIService.Application.DTOs;
+using SeemsAPIService.Application.Mapper.SeemsAPIService.Application.Mapper;
 using SeemsAPIService.Domain.Entities;
 
 namespace SeemsAPIService.Application.Mapper
 {
-  
+
     public class EnquiryMapper : IEntityMapper<EnquiryDto, se_enquiry, string?>
     {
         public se_enquiry MapForAdd(EnquiryDto dto, string? savedFilePath)
@@ -106,7 +107,7 @@ namespace SeemsAPIService.Application.Mapper
             existing.location_id = dto.location_id;
 
             // layout
-            existing.design =  dto.design;
+            existing.design = dto.design;
             existing.library = dto.library;
             existing.qacam = dto.qacam;
             existing.dfm = dto.dfm ?? "";

@@ -2,6 +2,7 @@
 using SeemsAPIService.Application.DTOs;
 using SeemsAPIService.Application.Interfaces;
 using SeemsAPIService.Application.Mapper;
+using SeemsAPIService.Application.Mapper.SeemsAPIService.Application.Mapper;
 using SeemsAPIService.Application.Services;
 using SeemsAPIService.Domain.Entities;
 using SeemsAPIService.Infrastructure.ExternalServices;
@@ -44,6 +45,7 @@ builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<IUserAccessRepository, UserAccessRepository>();
 builder.Services.AddScoped<IEntityMapper<EnquiryDto, se_enquiry, string?>, EnquiryMapper>(); //mapper dependency injection
 builder.Services.AddScoped<IEntityMapper<QuotationDto, se_quotation, string?>, QuotationMapper>();
+
 
 builder.Services.AddCors(options =>
 {

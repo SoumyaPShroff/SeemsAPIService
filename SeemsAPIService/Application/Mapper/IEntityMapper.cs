@@ -1,8 +1,15 @@
-﻿namespace SeemsAPIService.Application.Mapper
+﻿using SeemsAPIService.Application.DTOs;
+using SeemsAPIService.Domain.Entities;
+
+namespace SeemsAPIService.Application.Mapper
 {
-    public interface IEntityMapper<TDto, TEntity, TExtra>
+    namespace SeemsAPIService.Application.Mapper
     {
-        TEntity MapForAdd(TDto dto, TExtra extra);
-        void MapForEdit(TDto dto, TEntity existing, TExtra extra);
+        public interface IEntityMapper<TDto, TEntity, TExtra>
+        {
+            TEntity MapForAdd(TDto dto, TExtra extra);
+            void MapForEdit(TDto dto, TEntity existing, TExtra extra);
+        }
     }
+
 }
