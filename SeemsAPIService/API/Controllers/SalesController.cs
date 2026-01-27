@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Fluent;
 using SeemsAPIService.Application.DTOs;
 using SeemsAPIService.Application.Interfaces;
 using SeemsAPIService.Application.Services;
+using SeemsAPIService.Infrastructure.Documents;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -199,5 +201,32 @@ public class SalesController : ControllerBase
     {
         var result = await _service.GetQuoteBoardDescriptionsAsync();
         return Ok(result);
+    }
+
+    [HttpGet("RptQuoteDetails")]
+    public async Task<IActionResult> RptQuoteDetails(string? startdate, string? enddate, string? quoteno)
+    {
+        var result = await _service.RptQuoteDetailsAsync(startdate, enddate, quoteno);
+        return Ok(result);
+    }
+
+    [HttpGet("quotation/{enquiryNo}/{quoteNo}/report")]
+    public async Task<IActionResult> GetQuotationReport(
+    string enquiryNo,
+    string quoteNo)
+    {
+        var result = await _service.GetQuotationReportAsync(enquiryNo, quoteNo);
+
+        return Ok(result);
+    }
+
+    [HttpGet("quotation/{enquiryNo}/{quoteNo}/pdf")]
+    public async Task<IActionResult> GetQuotationPdf(string enquiryNo,string quoteNo)
+    {
+        var report = await _service.GetQuotationReportAsync(enquiryNo, quoteNo);
+
+        var pdf = new QuotationPDFDocument(report).GeneratePdf();
+
+        return File(pdf, "application/pdf", $"{quoteNo}.pdf");
     }
 }

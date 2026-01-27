@@ -1,4 +1,5 @@
 ﻿using SeemsAPIService.Application.DTOs;
+using SeemsAPIService.Application.DTOs.Reports;
 using SeemsAPIService.Domain.Entities;
 
 namespace SeemsAPIService.Application.Interfaces
@@ -23,7 +24,6 @@ namespace SeemsAPIService.Application.Interfaces
 
         // Quotation Related
         Task<object?> GetEnqCustLocContDataAsync(string enquiryNo);
-        // Task<QuotationDto?> GetQuotationDetailsAsync(string quoteNo);
         Task<se_quotation> GetQuotationDetailsAsync(string quoteNo);
         Task AddQuotationAsync(se_quotation entity);
         Task EditQuotationAsync(se_quotation entity);
@@ -31,6 +31,9 @@ namespace SeemsAPIService.Application.Interfaces
         Task<int> GetMaxQuoteNumberAsync();
         Task<List<se_quotlayout>> GetQuoteBoardDescriptionsAsync();
         Task<object?> GetQuoteDetailsByEnqQuoteNoAsync(string enquiryNo,string quoteNo);
-       
+        Task<List<RptQuoteDetails>> RptQuoteDetailsAsync(string? start, string? end, string? quoteno);
+
+        Task<QuotationReportDto> GetQuotationReportAsync(string enquiryNo, string quoteNo);
+
     }
 }

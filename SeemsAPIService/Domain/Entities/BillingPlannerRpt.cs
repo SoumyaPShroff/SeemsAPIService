@@ -32,7 +32,7 @@ namespace SeemsAPIService.Domain.Entities
         public string ActualEndDate { get; set; }
         public double? NonBillableHrs { get; set; }
         public double? TotalBillableHrs { get; set; }
-        public DateTime? FlagRaisedOn { get; set; }
+        public string FlagRaisedOn { get; set; }
         public double? TotalInvoicedHrs { get; set; }
         public double? TotalInvoicedAmt { get; set; }
         public string type { get; set; }

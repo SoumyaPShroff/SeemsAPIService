@@ -48,7 +48,8 @@ namespace SeemsAPIService.Infrastructure.Persistence
         public DbSet<se_stages_tools> se_stages_tools { get; set; }
         public DbSet<se_quotlayout> se_quotlayout {  get; set; }
         public DbSet<se_quotation> se_quotation { get; set; }
-       public DbSet<se_quotation_items> se_quotation_items { get; set; }
+        public DbSet<se_quotation_items> se_quotation_items { get; set; }
+        public DbSet<RptQuoteDetails> RptQuoteDetails { get; set; } 
 
         public async Task<object> GetTentativeQuotedOrders()
         {

@@ -54,7 +54,9 @@ public class JobRepository : IJobRepository
         //    .ToListAsync();
         string sql = "CALL sp_InvoiceDictionary(@start,@end)";
         return await _context.Invoicedictionary
-            .FromSqlRaw(sql)
+            .FromSqlRaw(sql,
+             new MySqlParameter("@start", start),
+                new MySqlParameter("@end", end))
             .ToListAsync();
     }
 

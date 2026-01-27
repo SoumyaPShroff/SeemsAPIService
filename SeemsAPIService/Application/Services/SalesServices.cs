@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using SeemsAPIService.Application.DTOs;
+using SeemsAPIService.Application.DTOs.Reports;
 using SeemsAPIService.Application.Interfaces;
 using SeemsAPIService.Application.Mapper;
 using SeemsAPIService.Application.Mapper.SeemsAPIService.Application.Mapper;
@@ -352,36 +353,6 @@ namespace SeemsAPIService.Application.Services
             return result;
         }
 
-
-        //public async Task<QuotationDto> AddQuotationAsync(QuotationDto dto)
-        //{
-        //    if (dto == null) throw new ArgumentNullException(nameof(dto));
-        //    if (dto.Items == null || !dto.Items.Any())
-        //        throw new ArgumentException("Quotation must have at least one item");
-
-        //    se_quotation existingQuote = null;
-        //    if (!string.IsNullOrWhiteSpace(dto.quoteNo))
-        //    {
-        //        existingQuote = await _salesRepository.GetQuotationDetailsAsync(dto.quoteNo);
-        //    }
-
-        //    if (existingQuote != null)
-        //    {
-        //        // Mapper handles deletion & update
-        //        _quotationMapper.MapForEdit(dto, existingQuote, null);
-
-        //        await _salesRepository.EditQuotationAsync(existingQuote);
-        //        await _salesRepository.SaveAsync();
-        //    }
-        //    else
-        //    {
-        //        var entity = _quotationMapper.MapForAdd(dto, null);
-        //        await _salesRepository.AddQuotationAsync(entity);
-        //        await _salesRepository.SaveAsync();
-        //    }
-
-        //    return dto; // or map back from entity
-        //}
         public async Task<QuotationDto> AddQuotationAsync(QuotationDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.quoteNo))
@@ -492,5 +463,65 @@ namespace SeemsAPIService.Application.Services
 
             return value.ToUpper() == "YES" ? "YES" : "NO";
         }
-    }
+        public async Task<List<RptQuoteDetails>>  RptQuoteDetailsAsync(string? start, string? end, string? quoteno)
+        {
+            return await _salesRepository.RptQuoteDetailsAsync(start, end,quoteno);
+        }
+        public async Task<QuotationReportDto> GetQuotationReportAsync(string enquiryNo,string quoteNo)
+        {
+            var raw = await _salesRepository
+                .GetQuoteDetailsByEnqQuoteNoAsync(enquiryNo, quoteNo);
+
+            if (raw == null)
+                throw new Exception("Quotation not found");
+
+            dynamic q = raw;
+
+            var report = new QuotationReportDto
+            {
+                QuoteNo = q.quoteNo,
+                EnquiryNo = q.enquiryno,
+                Customer = q.Customer,
+                BoardRef = q.board_ref,
+                VersionNo = q.versionNo,
+                CreatedBy = q.createdBy,
+                TermsAndConditions = q.tandc
+            };
+
+            int sl = 1;
+            decimal grandTotal = 0;
+
+            foreach (var item in q.items)
+            {
+                var lineTotal = item.quantity * item.unit_rate;
+
+                report.Items.Add(new RptQuotationLineDto
+                {
+                    SlNo = sl++,
+                    Layout = item.layout,
+                    Quantity = item.quantity,
+                    UnitRate = item.unit_rate,
+                    DurationType = item.durationtype,
+                    CurrencySymbol = GetCurrencySymbol(item.currency_id)
+                });
+
+                grandTotal += lineTotal;
+            }
+
+            report.GrandTotal = grandTotal;
+
+            return report;
+        }
+
+        private string GetCurrencySymbol(int currencyId)
+        {
+            return currencyId switch
+            {
+                1 => "₹",
+                2 => "$",
+                3 => "€",
+                _ => ""
+            };
+        }
+}
 }

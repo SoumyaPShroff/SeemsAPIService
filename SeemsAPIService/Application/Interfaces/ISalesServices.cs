@@ -1,4 +1,5 @@
 ﻿using SeemsAPIService.Application.DTOs;
+using SeemsAPIService.Application.DTOs.Reports;
 using SeemsAPIService.Domain.Entities;
 
 namespace SeemsAPIService.Application.Interfaces
@@ -26,10 +27,11 @@ namespace SeemsAPIService.Application.Interfaces
         Task<QuotationDto> EditQuotationAsync(QuotationDto dto);
         Task<object> DeleteQuotationAsync(string quoteNo);
         Task<int> GetMaxQuoteNumberAsync();
-        //  Task<QuotationDto> GetQuotationDetailsAsync(string quoteNo);
         Task<se_quotation> GetQuotationDetailsAsync(string quoteNo);
         Task<List<se_quotlayout>> GetQuoteBoardDescriptionsAsync();
+        Task<List<RptQuoteDetails>> RptQuoteDetailsAsync(string? start, string? end, string? quoteno);
 
+        Task<QuotationReportDto> GetQuotationReportAsync(string enquiryNo, string quoteNo);
     }
 
 }

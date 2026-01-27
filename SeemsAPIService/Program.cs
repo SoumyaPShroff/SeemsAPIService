@@ -46,7 +46,6 @@ builder.Services.AddScoped<IUserAccessRepository, UserAccessRepository>();
 builder.Services.AddScoped<IEntityMapper<EnquiryDto, se_enquiry, string?>, EnquiryMapper>(); //mapper dependency injection
 builder.Services.AddScoped<IEntityMapper<QuotationDto, se_quotation, string?>, QuotationMapper>();
 
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
