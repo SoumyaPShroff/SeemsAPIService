@@ -1,10 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using QuestPDF.Fluent;
 using SeemsAPIService.Application.DTOs;
 using SeemsAPIService.Application.Interfaces;
 using SeemsAPIService.Application.Services;
-using SeemsAPIService.Infrastructure.Documents;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -169,7 +167,7 @@ public class SalesController : ControllerBase
     }
 
     [HttpGet("QuotationDetailsByQuote/{quoteno}")]
-    public async Task<IActionResult> GetQuotationDetailsAsync( [FromRoute] string quoteno)
+    public async Task<IActionResult> GetQuotationDetailsAsync([FromRoute] string quoteno)
     {
         var result = await _service.GetQuotationDetailsAsync(quoteno);
         return Ok(result);
@@ -203,30 +201,18 @@ public class SalesController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("RptQuoteDetails")]
-    public async Task<IActionResult> RptQuoteDetails(string? startdate, string? enddate, string? quoteno)
+    [HttpGet("ViewQuoteDetails")]
+    public async Task<IActionResult> ViewQuoteDetails(string? startdate, string? enddate, string? quoteno)
     {
-        var result = await _service.RptQuoteDetailsAsync(startdate, enddate, quoteno);
+        var result = await _service.ViewQuoteDetailsAsync(startdate, enddate, quoteno);
         return Ok(result);
     }
 
-    [HttpGet("quotation/{enquiryNo}/{quoteNo}/report")]
-    public async Task<IActionResult> GetQuotationReport(
-    string enquiryNo,
-    string quoteNo)
+    [HttpGet("ViewQuotationReport/{quoteNo}/{versionNo}/{enquiryNo}")]
+    public async Task<IActionResult> GetQuotationReport(string quoteNo, int versionNo, string enquiryNo)
     {
-        var result = await _service.GetQuotationReportAsync(enquiryNo, quoteNo);
+        var result = await _service.GetQuotationReportAsync(quoteNo, versionNo, enquiryNo);
 
         return Ok(result);
-    }
-
-    [HttpGet("quotation/{enquiryNo}/{quoteNo}/pdf")]
-    public async Task<IActionResult> GetQuotationPdf(string enquiryNo,string quoteNo)
-    {
-        var report = await _service.GetQuotationReportAsync(enquiryNo, quoteNo);
-
-        var pdf = new QuotationPDFDocument(report).GeneratePdf();
-
-        return File(pdf, "application/pdf", $"{quoteNo}.pdf");
     }
 }

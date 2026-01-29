@@ -20,6 +20,7 @@ namespace SeemsAPIService.Application.Services
         private readonly IEntityMapper<QuotationDto, se_quotation, string?> _quotationMapper;
 
         public SalesService(ISalesRepository salesRepository, IReusableService reusableService,
+            IUserQueryService userQueryService,
             IEmailService emailService, IEmailRecipientService recipientService,
             IEntityMapper<EnquiryDto, se_enquiry, string?> enquiryMapper,
             IEntityMapper<QuotationDto, se_quotation, string?> quotationMapper
@@ -27,7 +28,7 @@ namespace SeemsAPIService.Application.Services
         {
             _salesRepository = salesRepository;
             _reusableService = reusableService;
-            _emailService = emailService;
+            _emailService = emailService;   
             _recipientService = recipientService;
             _enquiryMapper = enquiryMapper;
             _quotationMapper = quotationMapper;
@@ -95,7 +96,7 @@ namespace SeemsAPIService.Application.Services
             enquiry.vaMech = DefaultNo(enquiry.vaMech);
 
             // 3️⃣ Map DTO → Entity  ✅ FIXED
-            var newEnquiry = _enquiryMapper.MapForAdd(enquiry,savedFilePath);
+            var newEnquiry = _enquiryMapper.MapForAdd(enquiry, savedFilePath);
 
             // 4️⃣ Save enquiry
             await _salesRepository.AddEnquiryAsync(newEnquiry);
@@ -153,12 +154,12 @@ namespace SeemsAPIService.Application.Services
                 string.Join(";", ccUsers)
             );
         }
-       private string BuildEmailBody(
-            se_enquiry enquiry,
-            EnquiryDto dto,
-            dynamic customer,
-            string completeResp,
-            string salesResp)
+        private string BuildEmailBody(
+             se_enquiry enquiry,
+             EnquiryDto dto,
+             dynamic customer,
+             string completeResp,
+             string salesResp)
         {
             return $@"
                     Hello Team,<br/><br/>
@@ -193,7 +194,7 @@ namespace SeemsAPIService.Application.Services
 
             return Path.Combine("UploadedFiles", uniqueFileName);
         }
-     
+
         public async Task<object> EditEnquiryAsync(EnquiryDto dto, IFormFile? file)
         {
             ValidateEnquiry(dto);
@@ -207,7 +208,7 @@ namespace SeemsAPIService.Application.Services
             string? savedFilePath = await SaveFileAsync(file);
 
             // 3️⃣ Map DTO → EXISTING entity
-           _enquiryMapper.MapForEdit(dto,existing, savedFilePath);
+            _enquiryMapper.MapForEdit(dto, existing, savedFilePath);
 
             // 4️⃣ Save changes
             await _salesRepository.SaveAsync(); // <-- This is correct, do not assign to var
@@ -311,7 +312,7 @@ namespace SeemsAPIService.Application.Services
 
             return customer;
         }
-        public async Task<object> GetEnqCustLocContDataAsync(string enquiryNo)
+        public async Task<EnquiryCustomerDto> GetEnqCustLocContDataAsync(string enquiryNo)
         {
             var result = await _salesRepository.GetEnqCustLocContDataAsync(enquiryNo);
             if (result == null)
@@ -338,9 +339,9 @@ namespace SeemsAPIService.Application.Services
 
             return result;
         }
-        public async Task<object?> GetQuoteDetailsByEnqQuoteNoAsync(string enquiryNo,string quoteNo)
+        public async Task<object?> GetQuoteDetailsByEnqQuoteNoAsync(string enquiryNo, string quoteNo)
         {
-           var result =  await _salesRepository.GetQuoteDetailsByEnqQuoteNoAsync(enquiryNo,quoteNo);
+            var result = await _salesRepository.GetQuoteDetailsByEnqQuoteNoAsync(enquiryNo, quoteNo);
             return result;
         }
 
@@ -463,65 +464,82 @@ namespace SeemsAPIService.Application.Services
 
             return value.ToUpper() == "YES" ? "YES" : "NO";
         }
-        public async Task<List<RptQuoteDetails>>  RptQuoteDetailsAsync(string? start, string? end, string? quoteno)
-        {
-            return await _salesRepository.RptQuoteDetailsAsync(start, end,quoteno);
-        }
-        public async Task<QuotationReportDto> GetQuotationReportAsync(string enquiryNo,string quoteNo)
-        {
-            var raw = await _salesRepository
-                .GetQuoteDetailsByEnqQuoteNoAsync(enquiryNo, quoteNo);
 
-            if (raw == null)
+        public async Task<List<ViewQuoteDetails>> ViewQuoteDetailsAsync(string? start, string? end, string? quoteno)
+        {
+          return  await _salesRepository.ViewQuoteDetailsAsync(start, end, quoteno);
+        }
+
+        public async Task<se_quotation?> GetQuotationByQuoteVerAsync(string quoteNo, int versionNo)
+        {
+            if (string.IsNullOrWhiteSpace(quoteNo))
+                throw new ArgumentException("Quote number is required");
+
+            var result = await _salesRepository.GetQuotationByQuoteVerAsync(quoteNo, versionNo);
+
+            if (result == null)
                 throw new Exception("Quotation not found");
 
-            dynamic q = raw;
-
-            var report = new QuotationReportDto
-            {
-                QuoteNo = q.quoteNo,
-                EnquiryNo = q.enquiryno,
-                Customer = q.Customer,
-                BoardRef = q.board_ref,
-                VersionNo = q.versionNo,
-                CreatedBy = q.createdBy,
-                TermsAndConditions = q.tandc
-            };
-
-            int sl = 1;
-            decimal grandTotal = 0;
-
-            foreach (var item in q.items)
-            {
-                var lineTotal = item.quantity * item.unit_rate;
-
-                report.Items.Add(new RptQuotationLineDto
-                {
-                    SlNo = sl++,
-                    Layout = item.layout,
-                    Quantity = item.quantity,
-                    UnitRate = item.unit_rate,
-                    DurationType = item.durationtype,
-                    CurrencySymbol = GetCurrencySymbol(item.currency_id)
-                });
-
-                grandTotal += lineTotal;
-            }
-
-            report.GrandTotal = grandTotal;
-
-            return report;
+            return result;
         }
-
-        private string GetCurrencySymbol(int currencyId)
+        public async Task<QuotationReportDto?> GetQuotationReportAsync(string quoteNo,int versionNo,string enquiryNo)
         {
-            return currencyId switch
+            if (string.IsNullOrWhiteSpace(quoteNo))
+                throw new ArgumentException("Quote number is required");
+
+            //  Quotation
+            var quotation = await _salesRepository.GetQuotationByQuoteVerAsync(quoteNo, versionNo);
+
+            //  Customer details
+            var customer = await _salesRepository.GetEnqCustLocContDataAsync(enquiryNo);
+
+            // Employee details
+            var name = await _reusableService.GetUserNameAsync(quotation.createdBy);
+            var emailid = await _reusableService.GetUserEmaiIdAsync(quotation.createdBy);
+
+
+            // 5️⃣ Line items
+            var items = quotation.Items
+                .Select((x, i) => new RptQuotationLineDto
+                {
+                    SlNo = i + 1,
+                    Layout = x.layout,
+                    Quantity = x.quantity,
+                    UnitRate = x.unit_rate,
+                    LineTotal = x.quantity * x.unit_rate
+                })
+                .ToList();
+
+            var subTotal = items.Sum(i => i.LineTotal);
+
+            // 6️⃣ DTO mapping (NO async here)
+            return new QuotationReportDto
             {
-                1 => "₹",
-                2 => "$",
-                3 => "€",
-                _ => ""
+                Header = new RptQuotationHeaderDto
+                {
+                    QuoteNo = quotation.quoteNo,
+                    EnquiryNo = quotation.enquiryno,
+
+                    CustomerName = customer.Customer,
+                    CustomerAddress = $"{customer.Address}, {customer.Location}", //combine address and location  
+                    CustomerContactPerson = customer.ContactName,
+
+                    RFXNo = customer.RFXNo,
+
+                    CreatedById = quotation.createdBy,
+                    CreatedByName = name,
+                    CreatedByEmail = emailid,
+
+                    VersionNo = quotation.versionNo,
+                    BoardRef = quotation.board_ref
+                },
+
+                Items = items,
+                SubTotal = subTotal,
+                GrandTotal = subTotal,
+                TermsAndConditions = quotation.tandc
             };
         }
-}
+
+    }
 }

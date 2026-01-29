@@ -19,19 +19,18 @@ namespace SeemsAPIService.Application.Interfaces
         Task<List<states_ind>> GetStatesAsync();
         Task<List<poenquiries>> GetPoEnquiriesAsync();
         Task<object> GetCustomerByIdAsync(long customerId);
-        Task<object> GetEnqCustLocContDataAsync(string enquiryNo);
+        //  Task<object> GetEnqCustLocContDataAsync(string enquiryNo);
+        Task<EnquiryCustomerDto> GetEnqCustLocContDataAsync(string enquiryNo);
         Task<object?> GetCustomerAbbreviationAsync(long itemno);
         Task<object?> GetQuoteDetailsByEnqQuoteNoAsync(string enquiryNo,string quoteNo);
         Task<QuotationDto> AddQuotationAsync(QuotationDto dto);
-
         Task<QuotationDto> EditQuotationAsync(QuotationDto dto);
         Task<object> DeleteQuotationAsync(string quoteNo);
         Task<int> GetMaxQuoteNumberAsync();
-        Task<se_quotation> GetQuotationDetailsAsync(string quoteNo);
+        Task<se_quotation?> GetQuotationDetailsAsync(string quoteNo); 
+        Task<se_quotation?> GetQuotationByQuoteVerAsync(string quoteNo, int versionNo);
         Task<List<se_quotlayout>> GetQuoteBoardDescriptionsAsync();
-        Task<List<RptQuoteDetails>> RptQuoteDetailsAsync(string? start, string? end, string? quoteno);
-
-        Task<QuotationReportDto> GetQuotationReportAsync(string enquiryNo, string quoteNo);
+        Task<List<ViewQuoteDetails>> ViewQuoteDetailsAsync(string? start , string? end, string? quoteno);
+        Task<QuotationReportDto?> GetQuotationReportAsync(string quoteNo,int versionNo, string enquiryNo);
     }
-
 }

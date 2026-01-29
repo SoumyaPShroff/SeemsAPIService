@@ -66,6 +66,8 @@ namespace SeemsAPIService.Domain.Entities
 
         public string? vaMech { get; set; } 
 
+        public string? Rfxno { get; set; }
+
 
 
         // onsite extra fields

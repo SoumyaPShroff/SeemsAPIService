@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using SeemsAPIService.Application.DTOs.Reports;
 using SeemsAPIService.Application.Services;
 using SeemsAPIService.Domain.Entities;
 using System.Data;
@@ -49,7 +50,10 @@ namespace SeemsAPIService.Infrastructure.Persistence
         public DbSet<se_quotlayout> se_quotlayout {  get; set; }
         public DbSet<se_quotation> se_quotation { get; set; }
         public DbSet<se_quotation_items> se_quotation_items { get; set; }
-        public DbSet<RptQuoteDetails> RptQuoteDetails { get; set; } 
+        public DbSet<ViewQuoteDetails> ViewQuoteDetails { get; set; } 
+        public DbSet<QuotationReportDto> GetQuotationReport { get; set; }
+
+      //  public DbSet<QuotationReportDto> GetQuotationReportPDF { get; set; }
 
         public async Task<object> GetTentativeQuotedOrders()
         {
@@ -142,6 +146,10 @@ namespace SeemsAPIService.Infrastructure.Persistence
 
             modelBuilder.Entity<se_quotation_items>()
             .HasKey(x => new { x.quoteNo, x.slNo });
+
+            modelBuilder.Ignore<QuotationReportDto>();
+            modelBuilder.Ignore<RptQuotationHeaderDto>();
+            modelBuilder.Ignore<RptQuotationLineDto>();
         }
 
     }

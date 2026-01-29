@@ -10,7 +10,7 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SeemsAPIService.Infrastructure.Repositories
 {
-    public class SalesRepository: ISalesRepository
+    public class SalesRepository : ISalesRepository
     {
         private readonly AppDbContext _context;
 
@@ -167,7 +167,8 @@ namespace SeemsAPIService.Infrastructure.Repositories
                 .Where(p => p.pbalanceamt != "0")
                 .ToListAsync();
         }
-        public async Task<object?> GetEnqCustLocContDataAsync(string enquiryNo)
+        //  public async Task<object?> GetEnqCustLocContDataAsync(string enquiryNo)
+        public async Task<EnquiryCustomerDto?> GetEnqCustLocContDataAsync(string enquiryNo)
         {
             return await (
                 from e in _context.se_enquiry
@@ -175,7 +176,7 @@ namespace SeemsAPIService.Infrastructure.Repositories
                 join sl in _context.se_customer_locations on e.location_id equals sl.location_id
                 join sc in _context.se_customer_contacts on e.contact_id equals sc.contact_id
                 where e.enquiryno == enquiryNo
-                select new
+                select new EnquiryCustomerDto
                 {
                     Customer = c.Customer,
                     Location = sl.location,
@@ -183,7 +184,8 @@ namespace SeemsAPIService.Infrastructure.Repositories
                     Address = sl.address,
                     enquirytype = e.enquirytype,
                     locationid = e.location_id,
-                    boardref = e.jobnames
+                    boardref = e.jobnames,
+                    RFXNo = e.Rfxno
                 }
             ).FirstOrDefaultAsync();
         }
@@ -278,34 +280,58 @@ namespace SeemsAPIService.Infrastructure.Repositories
 
             return 0;
         }
-       
+
         public async Task<se_quotation?> GetQuotationDetailsAsync(string quoteNo)
         {
             return await _context.se_quotation
                 .Include(q => q.Items)
                 .FirstOrDefaultAsync(q => q.quoteNo == quoteNo);
         }
-        public async Task<List<RptQuoteDetails>> RptQuoteDetailsAsync(string? start, string? end, string? quoteno)
+
+
+        public async Task<se_quotation?> GetQuotationByQuoteVerAsync(string quoteNo, int versionNo)
+        {
+            return await _context.se_quotation
+                .Include(q => q.Items)
+                .FirstOrDefaultAsync(q => q.quoteNo == quoteNo && q.versionNo == versionNo);
+        }
+
+        public async Task<List<ViewQuoteDetails>> ViewQuoteDetailsAsync(string? start, string? end, string? quoteno)
         {
             string sql;
 
-            if (string.IsNullOrEmpty(start) && string.IsNullOrEmpty(end) && string.IsNullOrEmpty(quoteno)) //all
-                sql = "CALL sp_ViewQuoteReport(NULL, NULL,NULL)";
-            if (string.IsNullOrEmpty(start) is false && string.IsNullOrEmpty(end) is false  && string.IsNullOrEmpty(quoteno)) //only start and end
-                sql = $"CALL sp_ViewQuoteReport('{start}', '{end}', NULL)";
-            if (string.IsNullOrEmpty(start) && string.IsNullOrEmpty(end) && string.IsNullOrEmpty(quoteno) is false) //only quoteno
-                sql = $"CALL sp_ViewQuoteReport(NULL, NULL, '{quoteno}')";
+            if (string.IsNullOrEmpty(start) &&
+                string.IsNullOrEmpty(end) &&
+                string.IsNullOrEmpty(quoteno))
+            {
+                sql = "CALL sp_ViewQuoteDetails(NULL, NULL, NULL)";
+            }
+            else if (!string.IsNullOrEmpty(start) &&
+                     !string.IsNullOrEmpty(end) &&
+                     string.IsNullOrEmpty(quoteno))
+            {
+                sql = $"CALL sp_ViewQuoteDetails('{start}', '{end}', NULL)";
+            }
+            else if (string.IsNullOrEmpty(start) &&
+                     string.IsNullOrEmpty(end) &&
+                     !string.IsNullOrEmpty(quoteno))
+            {
+                sql = $"CALL sp_ViewQuoteDetails(NULL, NULL, '{quoteno}')";
+            }
             else
-                sql = $"CALL sp_ViewQuoteReport('{start}', '{end}', '{quoteno}')";
+            {
+                sql = $"CALL sp_ViewQuoteDetails('{start}', '{end}', '{quoteno}')";
+            }
 
-            return await _context.RptQuoteDetails
+            return await _context.ViewQuoteDetails
                 .FromSqlRaw(sql)
+                .AsNoTracking()
                 .ToListAsync();
         }
 
-        Task<QuotationReportDto> ISalesRepository.GetQuotationReportAsync(string enquiryNo, string quoteNo)
+        public async Task<QuotationReportDto?> GetQuotationReportAsync(string quoteNo, int versionNo,string enquiryNo)
         {
-            throw new NotImplementedException();
+            return await _context.GetQuotationReport.FirstOrDefaultAsync();
         }
     }
 }

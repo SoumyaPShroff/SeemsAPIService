@@ -27,6 +27,20 @@ namespace SeemsAPIService.Infrastructure.Repositories
             return name?.Trim() ?? string.Empty;
         }
 
+        public async Task<string> GetUserEmaiIdAsync(string loginId)
+        {
+            var EmailId = await (
+                from login in _context.Login
+                join emp in _context.general_employee
+                    on login.LoginID equals emp.IDno
+                where login.LoginID == loginId
+                      && emp.EmpStatus == "Active"
+                select emp.EmailId
+            ).FirstOrDefaultAsync();
+
+            return EmailId?.Trim() ?? string.Empty;
+        }
+
         public async Task<List<se_stages_tools>> GetStageToolsAsync(long? toolId)
         {
             return await _context.se_stages_tools

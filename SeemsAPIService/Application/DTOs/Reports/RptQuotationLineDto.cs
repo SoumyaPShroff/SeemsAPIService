@@ -6,9 +6,6 @@
         public string Layout { get; set; }
         public int Quantity { get; set; }
         public decimal UnitRate { get; set; }
-        public string CurrencySymbol { get; set; }
-        public string DurationType { get; set; }
-
-        public decimal LineTotal => Quantity * UnitRate;
+        public decimal LineTotal { get; set; }
     }
 }

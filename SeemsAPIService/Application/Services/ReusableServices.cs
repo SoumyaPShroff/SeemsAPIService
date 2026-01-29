@@ -19,6 +19,14 @@ namespace SeemsAPIService.Application.Services
             return await _repository.GetUserNameAsync(loginId);
         }
 
+        public async Task<string> GetUserEmaiIdAsync(string loginId)
+        {
+            if (string.IsNullOrWhiteSpace(loginId))
+                return string.Empty;
+
+            return await _repository.GetUserEmaiIdAsync(loginId);
+        }
+
         public Task<List<se_stages_tools>> GetStageToolsAsync(long? toolId)
             => _repository.GetStageToolsAsync(toolId);
 
